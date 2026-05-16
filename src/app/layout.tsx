@@ -8,7 +8,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "VECTOR.OS",
+  title: "Persona",
   description: "Your Personality, Quantified.",
 };
 

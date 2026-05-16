@@ -1,5 +1,6 @@
 import Link from "next/link";
 import InteractiveGrid from "./components/InteractiveGrid";
+import TopNavBar from "./components/TopNavBar";
 import "./globals.css";
 
 export default function Home() {
@@ -9,44 +10,7 @@ export default function Home() {
       <InteractiveGrid />
 
       {/* TopNavBar */}
-      <nav className="fixed top-0 w-full z-50 flex justify-between items-center px-margin-desktop h-16 bg-surface/80 backdrop-blur-sm border-b border-on-surface dark:border-outline flat no shadows">
-        <div className="flex items-center gap-8">
-          <span className="font-display-lg text-headline-lg-mobile font-extrabold tracking-tighter text-on-surface dark:text-on-surface">
-            Persona
-          </span>
-          <div className="hidden md:flex gap-6">
-            <Link
-              className="font-label-bold text-label-bold text-on-surface-variant font-medium hover:bg-primary-container hover:text-on-primary-container transition-colors py-2 px-3"
-              href="#"
-            >
-              Dashboard
-            </Link>
-            <Link
-              className="font-label-bold text-label-bold text-on-surface-variant font-medium hover:bg-primary-container hover:text-on-primary-container transition-colors py-2 px-3"
-              href="#"
-            >
-              Chat
-            </Link>
-            <Link
-              className="font-label-bold text-label-bold text-on-surface-variant font-medium hover:bg-primary-container hover:text-on-primary-container transition-colors py-2 px-3"
-              href="#"
-            >
-              Traits
-            </Link>
-          </div>
-        </div>
-        <div className="flex items-center gap-4">
-          <button className="hidden md:block bg-on-surface text-surface px-6 py-2 font-label-bold text-label-bold btn-primary transition-colors border border-transparent">
-            MBTI Test
-          </button>
-          <button className="text-primary dark:text-primary-fixed hover:text-primary-container transition-colors p-2">
-            <span className="material-symbols-outlined">settings</span>
-          </button>
-          <button className="text-primary dark:text-primary-fixed hover:text-primary-container transition-colors p-2">
-            <span className="material-symbols-outlined">account_circle</span>
-          </button>
-        </div>
-      </nav>
+      <TopNavBar />
 
       {/* Main Content */}
       <main className="flex-grow z-10 pt-16 flex flex-col items-center justify-center min-h-screen relative px-margin-mobile md:px-margin-desktop">
@@ -66,13 +30,19 @@ export default function Home() {
             on your input stream.
           </p>
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-            <button className="bg-on-surface text-surface px-8 py-4 font-label-bold text-label-bold uppercase tracking-widest border border-on-surface hover:bg-primary-container hover:text-on-surface transition-colors w-full sm:w-auto">
+            <Link 
+              href="/Assessment" 
+              className="bg-on-surface text-surface px-8 py-4 font-label-bold text-label-bold uppercase tracking-widest border border-on-surface hover:bg-primary-container hover:text-on-surface transition-colors w-full sm:w-auto"
+            >
               Start Assessment
-            </button>
-            <button className="bg-transparent text-on-surface px-8 py-4 font-label-bold text-label-bold uppercase tracking-widest border border-on-surface hover:bg-surface-variant transition-colors w-full sm:w-auto flex items-center justify-center gap-2">
+            </Link>
+            <Link 
+              href="/MBTI" 
+              className="bg-transparent text-on-surface px-8 py-4 font-label-bold text-label-bold uppercase tracking-widest border border-on-surface hover:bg-surface-variant transition-colors w-full sm:w-auto flex items-center justify-center gap-2"
+            >
               <span className="material-symbols-outlined">terminal</span>
               View Protocol
-            </button>
+            </Link>
           </div>
         </div>
       </main>
