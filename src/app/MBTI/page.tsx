@@ -15,8 +15,8 @@ export default function MBTIPage() {
       <TopNavBar />
 
       {/* Main Content */}
-      <main className="flex-grow flex items-center justify-center p-margin-mobile md:p-margin-desktop mt-16 relative z-10">
-        <div className="w-full max-w-4xl bg-surface/90 backdrop-blur-md border border-on-surface relative hard-shadow p-8 md:p-12">
+      <main className="flex-grow flex items-center justify-center p-margin-mobile md:p-margin-desktop mt-16 relative z-10 ">
+        <div className="w-full max-w-4xl bg-surface/90 backdrop-blur-md border border-on-surface relative hard-shadow p-8 md:p-12 animate-fade-in-up">
           
           <div className="border-b border-on-surface pb-6 mb-8">
             <h1 className="font-display-lg text-display-lg-mobile md:text-display-lg tracking-tighter uppercase text-on-surface">

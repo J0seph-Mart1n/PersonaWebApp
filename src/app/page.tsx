@@ -20,7 +20,7 @@ export default function Home() {
           <div className="absolute top-1/2 left-0 right-0 h-[1px] bg-on-surface opacity-10 hidden lg:block"></div>
         </div>
         
-        <div className="text-center max-w-4xl relative z-20 bg-surface/90 backdrop-blur-md p-8 md:p-16 border border-on-surface hard-shadow">
+        <div className="text-center max-w-4xl relative z-20 bg-surface/90 backdrop-blur-md p-8 md:p-16 border border-on-surface hard-shadow animate-fade-in-up">
           <h1 className="font-display-lg text-display-lg md:text-display-lg text-on-surface mb-8 tracking-tighter uppercase border-b border-on-surface pb-6">
             Your Personality,<br />Quantified.
           </h1>

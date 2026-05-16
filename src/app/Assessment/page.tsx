@@ -66,10 +66,10 @@ export default function AssessmentPage() {
       <TopNavBar />
 
       {/* Main Canvas */}
-      <main className="flex-grow flex items-center justify-center p-margin-mobile md:p-margin-desktop mt-16 relative z-10">
+      <main className="flex-grow flex items-center justify-center p-margin-mobile md:p-margin-desktop mt-16 relative z-10 ">
         {!isStarted ? (
           /* --- SIMPLE START MENU --- */
-          <div className="w-full max-w-2xl bg-surface/90 backdrop-blur-md border border-on-surface relative hard-shadow p-8 md:p-12 text-center">
+          <div className="w-full max-w-2xl bg-surface/90 backdrop-blur-md border border-on-surface relative hard-shadow p-8 md:p-12 text-center animate-fade-in-up">
             <h1 className="font-display-lg text-display-lg-mobile md:text-display-lg tracking-tighter uppercase text-on-surface mb-4">
               Personality Assessment
             </h1>
