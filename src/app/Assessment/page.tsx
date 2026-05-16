@@ -5,13 +5,18 @@ import Link from "next/link";
 import TopNavBar from "../components/TopNavBar";
 import InteractiveGrid from "../components/InteractiveGrid";
 
+import { questions } from "../../data/questions";
+
 export default function AssessmentPage() {
   const [isStarted, setIsStarted] = useState<boolean>(false);
-  // State to track which option the user selected (1 to 5)
-  // Initializes at 3 (Neutral) to match your HTML mockup
-  const [selectedValue, setSelectedValue] = useState<number>(3);
+  
+  // Dynamic state for traversing questions
+  const [currentIndex, setCurrentIndex] = useState<number>(0);
+  
+  // Store answers mapping Question ID to Likert Value (1-5)
+  const [answers, setAnswers] = useState<Record<number, number>>({});
 
-  // Configuration for the Likert scale to keep the JSX clean
+  // Configuration for the Likert scale
   const likertOptions = [
     { id: 1, sizeClass: "w-12 h-12", label: "STRONGLY\nDISAGREE" },
     { id: 2, sizeClass: "w-10 h-10", label: null },
@@ -19,6 +24,37 @@ export default function AssessmentPage() {
     { id: 4, sizeClass: "w-10 h-10", label: null },
     { id: 5, sizeClass: "w-12 h-12", label: "STRONGLY\nAGREE" },
   ];
+
+  const currentQuestion = questions[currentIndex];
+  
+  // Calculate progress percentage
+  const progressPercentage = ((currentIndex + 1) / questions.length) * 100;
+  
+  const handleOptionSelect = (value: number) => {
+    setAnswers((prev) => ({
+      ...prev,
+      [currentQuestion.id]: value,
+    }));
+  };
+
+  const handleNext = () => {
+    if (currentIndex < questions.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+    } else {
+      // Logic for finishing the assessment
+      console.log("Assessment completed! Answers:", answers);
+      alert("Assessment Completed! Check console for result data payload.");
+    }
+  };
+
+  const handlePrev = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+    }
+  };
+
+  // Determine if the Next button should be disabled (user hasn't answered yet)
+  const hasAnsweredCurrent = answers[currentQuestion.id] !== undefined;
 
   return (
     <div className="min-h-screen flex flex-col font-body-md text-on-surface antialiased overflow-x-hidden">
@@ -38,7 +74,7 @@ export default function AssessmentPage() {
               Personality Assessment
             </h1>
             <p className="font-body-md text-on-surface-variant mb-12">
-              60 Statements. 10 Minutes. Respond honestly to calculate your true digital archetype.
+              {questions.length} Statements. Respond honestly to calculate your true digital archetype.
             </p>
             <div className="flex justify-center">
               <button 
@@ -56,7 +92,10 @@ export default function AssessmentPage() {
           
           {/* Progress Bar Header */}
           <div className="h-2 w-full bg-surface-variant border-b border-on-surface">
-            <div className="h-full bg-primary-container w-[45%] transition-all duration-300"></div>
+            <div 
+              className="h-full bg-primary-container transition-all duration-300"
+              style={{ width: `${progressPercentage}%` }}
+            ></div>
           </div>
 
           <div className="p-8 md:p-16 flex flex-col items-center text-center">
@@ -64,16 +103,16 @@ export default function AssessmentPage() {
             {/* Meta Info */}
             <div className="flex items-center gap-4 mb-8">
               <span className="font-mono-data text-mono-data text-on-surface-variant bg-surface px-3 py-1 border border-on-surface">
-                NODE 04 / 60
+                NODE {String(currentIndex + 1).padStart(2, '0')} / {questions.length}
               </span>
               <span className="font-label-bold text-label-bold text-on-surface uppercase tracking-wider">
-                Perception Vector
+                {currentQuestion.vectorName}
               </span>
             </div>
 
             {/* Question */}
             <h1 className="font-headline-lg text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-on-surface mb-12 max-w-2xl leading-tight">
-              You often spend time exploring unrealistic yet intriguing ideas.
+              {currentQuestion.text}
             </h1>
 
             {/* Interactive Likert Scale */}
@@ -85,12 +124,12 @@ export default function AssessmentPage() {
 
                 {/* Options Mapping */}
                 {likertOptions.map((option) => {
-                  const isSelected = selectedValue === option.id;
+                  const isSelected = answers[currentQuestion.id] === option.id;
 
                   return (
                     <div
                       key={option.id}
-                      onClick={() => setSelectedValue(option.id)}
+                      onClick={() => handleOptionSelect(option.id)}
                       className="relative z-10 flex flex-col items-center gap-3 cursor-pointer group"
                     >
                       <div
@@ -118,14 +157,30 @@ export default function AssessmentPage() {
 
             {/* Navigation Controls */}
             <div className="flex justify-between w-full pt-8 border-t border-on-surface">
-              <button className="font-label-bold text-label-bold text-on-surface uppercase tracking-wider py-3 px-6 border border-on-surface hover:bg-surface-variant transition-colors flex items-center gap-2">
+              <button 
+                onClick={handlePrev}
+                disabled={currentIndex === 0}
+                className={`font-label-bold text-label-bold uppercase tracking-wider py-3 px-6 border border-on-surface flex items-center gap-2 transition-colors
+                  ${currentIndex === 0 
+                    ? "opacity-50 cursor-not-allowed text-on-surface-variant bg-surface" 
+                    : "text-on-surface hover:bg-surface-variant"
+                  }`}
+              >
                 <span className="material-symbols-outlined text-[18px]">arrow_back</span>
                 Previous
               </button>
               
-              <button className="font-label-bold text-label-bold text-on-tertiary bg-on-surface uppercase tracking-wider py-3 px-8 border border-on-surface hover:bg-primary-container hover:text-on-surface transition-colors flex items-center gap-2">
-                Next Vector
-                <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+              <button 
+                onClick={handleNext}
+                disabled={!hasAnsweredCurrent}
+                className={`font-label-bold text-label-bold uppercase tracking-wider py-3 px-8 border border-on-surface flex items-center gap-2 transition-colors
+                  ${!hasAnsweredCurrent 
+                    ? "opacity-50 cursor-not-allowed text-on-surface-variant bg-surface" 
+                    : "text-on-tertiary bg-on-surface hover:bg-primary-container hover:text-on-surface"
+                  }`}
+              >
+                {currentIndex === questions.length - 1 ? "Complete" : "Next Vector"}
+                {currentIndex !== questions.length - 1 && <span className="material-symbols-outlined text-[18px]">arrow_forward</span>}
               </button>
             </div>
           </div>
