@@ -4,11 +4,13 @@ import React, { useState } from "react";
 import Link from "next/link";
 import TopNavBar from "../components/TopNavBar";
 import InteractiveGrid from "../components/InteractiveGrid";
+import ResultsSummary from "../components/ResultsSummary";
 
 import { questions } from "../../data/questions";
 
 export default function AssessmentPage() {
   const [isStarted, setIsStarted] = useState<boolean>(false);
+  const [isCompleted, setIsCompleted] = useState<boolean>(false);
   
   // Dynamic state for traversing questions
   const [currentIndex, setCurrentIndex] = useState<number>(0);
@@ -41,9 +43,7 @@ export default function AssessmentPage() {
     if (currentIndex < questions.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
-      // Logic for finishing the assessment
-      console.log("Assessment completed! Answers:", answers);
-      alert("Assessment Completed! Check console for result data payload.");
+      setIsCompleted(true);
     }
   };
 
@@ -51,6 +51,13 @@ export default function AssessmentPage() {
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
     }
+  };
+
+  const handleRetake = () => {
+    setIsStarted(false);
+    setIsCompleted(false);
+    setCurrentIndex(0);
+    setAnswers({});
   };
 
   // Determine if the Next button should be disabled (user hasn't answered yet)
@@ -67,7 +74,10 @@ export default function AssessmentPage() {
 
       {/* Main Canvas */}
       <main className="flex-grow flex items-center justify-center p-margin-mobile md:p-margin-desktop mt-16 relative z-10 ">
-        {!isStarted ? (
+        {isCompleted ? (
+          /* --- RESULTS SUMMARY --- */
+          <ResultsSummary answers={answers} onRetake={handleRetake} />
+        ) : !isStarted ? (
           /* --- SIMPLE START MENU --- */
           <div className="w-full max-w-2xl bg-surface/90 backdrop-blur-md border border-on-surface relative hard-shadow p-8 md:p-12 text-center animate-fade-in-up">
             <h1 className="font-display-lg text-display-lg-mobile md:text-display-lg tracking-tighter uppercase text-on-surface mb-4">
