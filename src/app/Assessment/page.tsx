@@ -1,14 +1,19 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import TopNavBar from "../components/TopNavBar";
 import InteractiveGrid from "../components/InteractiveGrid";
 import ResultsSummary from "../components/ResultsSummary";
 
 import { questions } from "../../data/questions";
+import { onAuthStateChanged } from "firebase/auth";
+import { FIREBASE_AUTH } from "../../../FirebaseConfig";
 
 export default function AssessmentPage() {
+  const router = useRouter();
+  const [authChecking, setAuthChecking] = useState(true);
   const [isStarted, setIsStarted] = useState<boolean>(false);
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
   
@@ -17,6 +22,17 @@ export default function AssessmentPage() {
   
   // Store answers mapping Question ID to Likert Value (1-5)
   const [answers, setAnswers] = useState<Record<number, number>>({});
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, (user) => {
+      if (!user) {
+        router.push("/Signup");
+      } else {
+        setAuthChecking(false);
+      }
+    });
+    return () => unsubscribe();
+  }, [router]);
 
   // Configuration for the Likert scale
   const likertOptions = [
@@ -62,6 +78,14 @@ export default function AssessmentPage() {
 
   // Determine if the Next button should be disabled (user hasn't answered yet)
   const hasAnsweredCurrent = answers[currentQuestion.id] !== undefined;
+
+  if (authChecking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-surface">
+        <p className="font-mono-data text-on-surface-variant">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col font-body-md text-on-surface antialiased overflow-x-hidden">

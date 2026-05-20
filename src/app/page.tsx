@@ -1,9 +1,31 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import InteractiveGrid from "./components/InteractiveGrid";
 import TopNavBar from "./components/TopNavBar";
 import "./globals.css";
+import { onAuthStateChanged } from "firebase/auth";
+import { FIREBASE_AUTH } from "../../FirebaseConfig";
 
 export default function Home() {
+  const [authChecking, setAuthChecking] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, () => {
+      setAuthChecking(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  if (authChecking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-surface">
+        <p className="font-mono-data text-on-surface-variant">Loading...</p>
+      </div>
+    );
+  }
+
   return (
     <>
       {/* Interactive Vector Grid Background */}
