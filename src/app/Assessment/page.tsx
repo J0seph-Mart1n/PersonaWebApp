@@ -8,12 +8,13 @@ import InteractiveGrid from "../components/InteractiveGrid";
 import ResultsSummary from "../components/ResultsSummary";
 
 import { questions } from "../../data/questions";
-import { onAuthStateChanged } from "firebase/auth";
+import { User, onAuthStateChanged } from "firebase/auth";
 import { FIREBASE_AUTH } from "../../../FirebaseConfig";
 
 export default function AssessmentPage() {
   const router = useRouter();
   const [authChecking, setAuthChecking] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
   const [isStarted, setIsStarted] = useState<boolean>(false);
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
   
@@ -24,10 +25,11 @@ export default function AssessmentPage() {
   const [answers, setAnswers] = useState<Record<number, number>>({});
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, (user) => {
-      if (!user) {
+    const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, (currentUser) => {
+      if (!currentUser) {
         router.push("/Signup");
       } else {
+        setUser(currentUser);
         setAuthChecking(false);
       }
     });
@@ -100,7 +102,7 @@ export default function AssessmentPage() {
       <main className="flex-grow flex items-center justify-center p-margin-mobile md:p-margin-desktop mt-16 relative z-10 ">
         {isCompleted ? (
           /* --- RESULTS SUMMARY --- */
-          <ResultsSummary answers={answers} onRetake={handleRetake} />
+          <ResultsSummary answers={answers} onRetake={handleRetake} user={user} />
         ) : !isStarted ? (
           /* --- SIMPLE START MENU --- */
           <div className="w-full max-w-2xl bg-surface/90 backdrop-blur-md border border-on-surface relative hard-shadow p-8 md:p-12 text-center animate-fade-in-up">

@@ -1,11 +1,14 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import { User } from "firebase/auth";
 import { questions, Question } from "../../data/questions";
 
 interface ResultsSummaryProps {
   answers: Record<number, number>;
   onRetake: () => void;
+  user: User | null;
 }
 
 const LIKERT_LABELS = ["", "Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"];
@@ -21,9 +24,59 @@ const TRAIT_NAMES: Record<string, string> = {
   P: "Perceiving",
 };
 
-export default function ResultsSummary({ answers, onRetake }: ResultsSummaryProps) {
+export default function ResultsSummary({ answers, onRetake, user }: ResultsSummaryProps) {
+  const router = useRouter();
+  const [isSaving, setIsSaving] = useState(false);
+
   // Group questions by their dichotomy pair
   const dichotomies: [string, string][] = [["E", "I"], ["S", "N"], ["T", "F"], ["J", "P"]];
+
+  const handleSave = async () => {
+    if (!user) {
+      alert("You must be logged in to save results.");
+      return;
+    }
+    
+    setIsSaving(true);
+    try {
+      // Calculate 4-letter MBTI Vector dynamically
+      const mbtiVector = dichotomies.map(([traitA, traitB]) => {
+        const scoreA = questions
+          .filter((q) => q.trait === traitA)
+          .reduce((sum, q) => sum + (answers[q.id] || 3), 0);
+        const scoreB = questions
+          .filter((q) => q.trait === traitB)
+          .reduce((sum, q) => sum + (answers[q.id] || 3), 0);
+        return scoreA >= scoreB ? traitA : traitB;
+      }).join("");
+
+      const detailedAnswers = questions.map(q => ({
+        question: q.text,
+        traitCategory: q.trait,
+        answer: LIKERT_LABELS[answers[q.id] || 3]
+      }));
+
+      const response = await fetch("http://localhost:5000/api/process-assessment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.uid,
+          mbtiVector,
+          rawAnswers: detailedAnswers,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to save to backend.");
+
+      alert("Results saved and processed successfully!");
+      router.push("/");
+    } catch (error) {
+      console.error(error);
+      alert("An error occurred while saving.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="w-full max-w-4xl bg-surface/90 backdrop-blur-md border border-on-surface relative hard-shadow animate-fade-in-up">
@@ -126,10 +179,12 @@ export default function ResultsSummary({ answers, onRetake }: ResultsSummaryProp
             Re-take Test
           </button>
           <button
-            className="bg-on-surface text-surface px-8 py-3 font-label-bold text-label-bold uppercase tracking-widest hover:bg-primary-container hover:text-on-surface transition-colors flex items-center gap-2 justify-center btn-primary border border-transparent"
+            onClick={handleSave}
+            disabled={isSaving}
+            className="bg-on-surface text-surface px-8 py-3 font-label-bold text-label-bold uppercase tracking-widest hover:bg-primary-container hover:text-on-surface transition-colors flex items-center gap-2 justify-center btn-primary border border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Save Results
-            <span className="material-symbols-outlined text-[18px]">save</span>
+            {isSaving ? "Processing..." : "Save Results"}
+            {!isSaving && <span className="material-symbols-outlined text-[18px]">save</span>}
           </button>
         </div>
       </div>
