@@ -10,6 +10,9 @@ import ResultsSummary from "../components/ResultsSummary";
 import { questions } from "../../data/questions";
 import { User, onAuthStateChanged } from "firebase/auth";
 import { FIREBASE_AUTH } from "../../../FirebaseConfig";
+import { getLatestAssessmentFromFirebase } from "../../services/firebaseAssessmentService";
+
+const LIKERT_LABELS = ["", "Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"];
 
 export default function AssessmentPage() {
   const router = useRouter();
@@ -23,13 +26,33 @@ export default function AssessmentPage() {
   
   // Store answers mapping Question ID to Likert Value (1-5)
   const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [isHistorical, setIsHistorical] = useState<boolean>(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, async (currentUser) => {
       if (!currentUser) {
         router.push("/Signup");
       } else {
         setUser(currentUser);
+        
+        // Check for historical assessment
+        const latestAssessment = await getLatestAssessmentFromFirebase(currentUser.uid);
+        if (latestAssessment) {
+          const reconstructedAnswers: Record<number, number> = {};
+          latestAssessment.detailedAnswers.forEach((ans: any) => {
+            const q = questions.find(q => q.text === ans.question);
+            if (q) {
+              const score = LIKERT_LABELS.indexOf(ans.answer);
+              if (score > 0) reconstructedAnswers[q.id] = score;
+            }
+          });
+          
+          setAnswers(reconstructedAnswers);
+          setIsHistorical(true);
+          setIsStarted(true);
+          setIsCompleted(true);
+        }
+        
         setAuthChecking(false);
       }
     });
@@ -74,6 +97,7 @@ export default function AssessmentPage() {
   const handleRetake = () => {
     setIsStarted(false);
     setIsCompleted(false);
+    setIsHistorical(false);
     setCurrentIndex(0);
     setAnswers({});
   };
@@ -102,7 +126,7 @@ export default function AssessmentPage() {
       <main className="flex-grow flex items-center justify-center p-margin-mobile md:p-margin-desktop mt-16 relative z-10 ">
         {isCompleted ? (
           /* --- RESULTS SUMMARY --- */
-          <ResultsSummary answers={answers} onRetake={handleRetake} user={user} />
+          <ResultsSummary answers={answers} onRetake={handleRetake} user={user} isHistorical={isHistorical} />
         ) : !isStarted ? (
           /* --- SIMPLE START MENU --- */
           <div className="w-full max-w-2xl bg-surface/90 backdrop-blur-md border border-on-surface relative hard-shadow p-8 md:p-12 text-center animate-fade-in-up">

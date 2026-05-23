@@ -4,11 +4,13 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { User } from "firebase/auth";
 import { questions, Question } from "../../data/questions";
+import { saveAssessmentScoreToFirebase } from "../../services/firebaseAssessmentService";
 
 interface ResultsSummaryProps {
   answers: Record<number, number>;
   onRetake: () => void;
   user: User | null;
+  isHistorical?: boolean;
 }
 
 const LIKERT_LABELS = ["", "Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"];
@@ -24,7 +26,7 @@ const TRAIT_NAMES: Record<string, string> = {
   P: "Perceiving",
 };
 
-export default function ResultsSummary({ answers, onRetake, user }: ResultsSummaryProps) {
+export default function ResultsSummary({ answers, onRetake, user, isHistorical = false }: ResultsSummaryProps) {
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
 
@@ -56,7 +58,8 @@ export default function ResultsSummary({ answers, onRetake, user }: ResultsSumma
         answer: LIKERT_LABELS[answers[q.id] || 3]
       }));
 
-      const response = await fetch("http://localhost:5000/api/process-assessment", {
+      // 1. Call Node.js Backend API
+      const backendPromise = fetch("http://localhost:5000/api/process-assessment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -65,6 +68,12 @@ export default function ResultsSummary({ answers, onRetake, user }: ResultsSumma
           rawAnswers: detailedAnswers,
         }),
       });
+
+      // 2. Save to Firebase Firestore
+      const firebasePromise = saveAssessmentScoreToFirebase(user.uid, mbtiVector, detailedAnswers);
+
+      // Wait for both to complete
+      const [response] = await Promise.all([backendPromise, firebasePromise]);
 
       if (!response.ok) throw new Error("Failed to save to backend.");
 
@@ -169,22 +178,26 @@ export default function ResultsSummary({ answers, onRetake, user }: ResultsSumma
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex flex-col sm:flex-row justify-between gap-4 pt-6 border-t border-on-surface">
+        {/* Action Buttons */}
+        <div className="flex gap-4 pt-4 mt-8 border-t border-on-surface">
+          {!isHistorical && (
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="flex-1 bg-on-surface text-surface font-label-bold py-3 hover:bg-primary-container hover:text-on-surface transition-colors flex justify-center items-center gap-2"
+            >
+              <span className="material-symbols-outlined text-[18px]">
+                {isSaving ? "sync" : "save"}
+              </span>
+              {isSaving ? "SAVING..." : "SAVE RESULTS"}
+            </button>
+          )}
           <button
             onClick={onRetake}
-            className="font-label-bold text-label-bold text-on-surface uppercase tracking-wider py-3 px-6 border border-on-surface hover:bg-surface-variant transition-colors flex items-center gap-2 justify-center"
+            className="flex-1 border border-on-surface text-on-surface font-label-bold py-3 hover:bg-surface-variant transition-colors flex justify-center items-center gap-2"
           >
             <span className="material-symbols-outlined text-[18px]">refresh</span>
-            Re-take Test
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            className="bg-on-surface text-surface px-8 py-3 font-label-bold text-label-bold uppercase tracking-widest hover:bg-primary-container hover:text-on-surface transition-colors flex items-center gap-2 justify-center btn-primary border border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isSaving ? "Processing..." : "Save Results"}
-            {!isSaving && <span className="material-symbols-outlined text-[18px]">save</span>}
+            RE-TAKE TEST
           </button>
         </div>
       </div>
