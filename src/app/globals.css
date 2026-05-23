@@ -2,6 +2,14 @@
 @config "../../tailwind.config.ts";
 
 
+/* Simulating High-Contrast Minimalism shadows */
+.vector-shadow {
+    box-shadow: 2px 2px 0px 0px theme('colors.on-surface');
+}
+.vector-shadow-lg {
+    box-shadow: 4px 4px 0px 0px theme('colors.on-surface');
+}
+
 .vector-grid {
     background-size: 32px 32px;
     background-image: 

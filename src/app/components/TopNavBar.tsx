@@ -58,7 +58,7 @@ export default function TopNavBar() {
           </Link>
           <Link
             className="font-label-bold text-label-bold text-on-surface-variant font-medium hover:bg-primary-container hover:text-on-primary-container transition-colors py-2 px-3"
-            href="#"
+            href="/Traits"
           >
             Traits
           </Link>
