@@ -43,3 +43,14 @@
     animation: fadeInUp 2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     opacity: 0;
 }
+
+/* Fix for react-force-graph-2d tooltips */
+.scene-tooltip {
+    color: theme('colors.surface') !important;
+    background-color: theme('colors.on-surface') !important;
+    padding: 6px 10px;
+    border: 1px solid theme('colors.surface');
+    font-family: monospace;
+    font-size: 14px;
+    z-index: 1000 !important;
+}

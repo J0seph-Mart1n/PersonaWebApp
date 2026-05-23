@@ -1,10 +1,22 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { User, onAuthStateChanged } from "firebase/auth";
+import { FIREBASE_AUTH } from "../../../FirebaseConfig";
 import TopNavBar from "../components/TopNavBar";
+import UserGraph from "../components/UserGraph";
 
 export default function DashboardPage() {
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, (currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribe();
+  }, []);
+
   return (
     <div className="font-body-md text-body-md text-on-surface antialiased min-h-screen relative overflow-x-hidden">
       
@@ -102,82 +114,8 @@ export default function DashboardPage() {
               <section className="bg-surface border border-on-surface p-1 relative flex-1 min-h-[500px] flex flex-col vector-shadow-lg">
                 <div className="flex justify-between items-center p-4 border-b border-on-surface bg-surface-container-lowest">
                   <h2 className="font-headline-lg text-headline-lg-mobile text-on-surface">VECTOR SPACE [3D]</h2>
-                  <div className="flex gap-2">
-                    <button className="w-8 h-8 flex items-center justify-center border border-on-surface hover:bg-primary-container transition-colors">
-                      <span className="material-symbols-outlined text-[16px]">zoom_in</span>
-                    </button>
-                    <button className="w-8 h-8 flex items-center justify-center border border-on-surface hover:bg-primary-container transition-colors">
-                      <span className="material-symbols-outlined text-[16px]">zoom_out</span>
-                    </button>
-                    <button className="w-8 h-8 flex items-center justify-center border border-on-surface hover:bg-primary-container transition-colors">
-                      <span className="material-symbols-outlined text-[16px]">360</span>
-                    </button>
-                  </div>
                 </div>
-                
-                {/* 
-                  NOTE: You can replace this entire div below with the <ForceGraph2D /> 
-                  component from our previous step to make it render live data!
-                */}
-                <div 
-                  className="flex-1 bg-surface-bright relative overflow-hidden flex items-center justify-center" 
-                  style={{ backgroundImage: "radial-gradient(#484831 1px, transparent 1px)", backgroundSize: "40px 40px" }}
-                >
-                  <div className="absolute w-full h-[1px] bg-on-surface-variant opacity-30 top-1/2 -translate-y-1/2"></div>
-                  <div className="absolute h-full w-[1px] bg-on-surface-variant opacity-30 left-1/2 -translate-x-1/2"></div>
-                  <div className="absolute w-[150%] h-[1px] bg-on-surface-variant opacity-30 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rotate-45"></div>
-
-                  <div className="absolute top-[20%] left-[30%] w-2 h-2 bg-on-surface opacity-40"></div>
-                  <div className="absolute top-[60%] left-[20%] w-3 h-3 bg-on-surface opacity-30"></div>
-                  <div className="absolute top-[80%] left-[70%] w-1.5 h-1.5 bg-on-surface opacity-60"></div>
-                  <div className="absolute top-[30%] left-[80%] w-2.5 h-2.5 bg-on-surface opacity-50"></div>
-
-                  <div className="absolute top-[40%] left-[45%] w-4 h-4 bg-on-surface border border-surface"></div>
-                  <div className="absolute top-[55%] left-[65%] w-3 h-3 bg-on-surface border border-surface"></div>
-
-                  {/* Highlighted Target Node */}
-                  <div className="absolute top-[45%] left-[55%] group cursor-crosshair">
-                    <div className="absolute top-3 right-full w-24 h-[1px] bg-primary-container border-t border-dashed border-on-surface"></div>
-                    <div className="absolute top-full left-3 h-32 w-[1px] bg-primary-container border-l border-dashed border-on-surface"></div>
-                    <div className="w-6 h-6 bg-primary-container border-2 border-on-surface flex items-center justify-center relative z-10 vector-shadow">
-                      <div className="w-2 h-2 bg-on-surface"></div>
-                    </div>
-                    {/* Tooltip */}
-                    <div className="absolute top-0 left-full ml-4 bg-surface border border-on-surface p-2 min-w-[120px] vector-shadow z-20 pointer-events-none group-hover:opacity-100 opacity-0 transition-opacity">
-                      <span className="block font-label-bold text-label-bold text-on-surface border-b border-on-surface pb-1 mb-1">NODE: ACTIVE</span>
-                      <span className="block font-mono-data text-[10px] text-on-surface-variant">X: 0.84</span>
-                      <span className="block font-mono-data text-[10px] text-on-surface-variant">Y: -0.22</span>
-                      <span className="block font-mono-data text-[10px] text-on-surface-variant">Z: 0.91</span>
-                    </div>
-                  </div>
-
-                  {/* Coordinate Overlay */}
-                  <div className="absolute bottom-4 left-4 bg-surface border border-on-surface p-2 vector-shadow">
-                    <span className="font-mono-data text-mono-data text-on-surface block">LOCAL CLUSTER</span>
-                  </div>
-                </div>
-              </section>
-
-              {/* Bottom Controls/Log */}
-              <section className="bg-surface border border-on-surface p-0 flex flex-col vector-shadow">
-                <div className="border-b border-on-surface p-3 bg-surface-container flex justify-between items-center">
-                  <span className="font-label-bold text-label-bold text-on-surface">STREAM LOG</span>
-                  <span className="material-symbols-outlined text-[16px] text-on-surface">filter_list</span>
-                </div>
-                <div className="p-4 font-mono-data text-[12px] h-32 overflow-y-auto space-y-2">
-                  <div className="flex gap-4">
-                    <span className="text-on-surface-variant w-16">10:42:01</span>
-                    <span className="text-on-surface border-l-4 border-primary-container pl-2">Recalculating node trajectory based on fresh input...</span>
-                  </div>
-                  <div className="flex gap-4">
-                    <span className="text-on-surface-variant w-16">10:42:05</span>
-                    <span className="text-on-surface border-l-4 border-transparent pl-2">Vector displacement identified in sector 7G.</span>
-                  </div>
-                  <div className="flex gap-4">
-                    <span className="text-on-surface-variant w-16">10:42:12</span>
-                    <span className="text-on-surface border-l-4 border-transparent pl-2">Syncing behavioral patterns.</span>
-                  </div>
-                </div>
+                <UserGraph user={user} />
               </section>
 
             </div>
