@@ -1,4 +1,4 @@
-import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, limit } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, limit, deleteDoc } from "firebase/firestore";
 import { FIREBASE_DB } from "../../FirebaseConfig";
 
 export const saveAssessmentScoreToFirebase = async (
@@ -9,6 +9,14 @@ export const saveAssessmentScoreToFirebase = async (
   try {
     const assessmentsRef = collection(FIREBASE_DB, "users", userId, "assessments");
     
+    // Delete any existing assessments for the user
+    const querySnapshot = await getDocs(assessmentsRef);
+    const deletePromises = querySnapshot.docs.map((docSnapshot) => 
+      deleteDoc(docSnapshot.ref)
+    );
+    await Promise.all(deletePromises);
+    
+    // Add the new assessment
     await addDoc(assessmentsRef, {
       mbtiVector,
       detailedAnswers,

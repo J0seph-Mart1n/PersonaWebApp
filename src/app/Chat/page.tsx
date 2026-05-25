@@ -1,17 +1,74 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { User, onAuthStateChanged } from "firebase/auth";
+import { FIREBASE_AUTH } from "../../../FirebaseConfig";
 import TopNavBar from "../components/TopNavBar";
 
-export default function NeuralHubPage() {
+export default function ChatPage() {
   const [inputText, setInputText] = useState("");
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [messages, setMessages] = useState<{role: string, content: string}[]>([
+    {
+      role: "assistant", 
+      content: "Hi, I'm Persona, your personalized AI assistant. How can I help you today?"
+    }
+  ]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const handleSendMessage = () => {
-    if (!inputText.trim()) return;
-    console.log("Sending query:", inputText);
-    // Wire this up to your FastAPI/Node.js backend here
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, (currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isLoading]);
+
+  const handleSendMessage = async () => {
+    if (!inputText.trim() || isLoading) return;
+    
+    const userMessage = inputText.trim();
     setInputText("");
+    
+    const newMessages = [...messages, { role: "user", content: userMessage }];
+    setMessages(newMessages);
+    setIsLoading(true);
+
+    try {
+      const historyForApi = newMessages.map(m => ({ role: m.role, content: m.content }));
+      
+      const response = await fetch("http://localhost:5000/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user?.uid || "anonymous",
+          message: userMessage,
+          history: historyForApi.slice(0, -1)
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to communicate with Vector.OS");
+      }
+
+      const data = await response.json();
+      setMessages(prev => [...prev, { role: "assistant", content: data.response }]);
+
+    } catch (error) {
+      console.error("Chat error:", error);
+      setMessages(prev => [...prev, { role: "assistant", content: "ERROR: Connection to main frame lost. Please try again." }]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -124,50 +181,34 @@ export default function NeuralHubPage() {
           {/* Chat Messages Area */}
           <div className="flex-1 overflow-y-auto p-6 md:p-margin-desktop flex flex-col gap-8 z-10 relative">
             
-            {/* AI Message (Welcome) */}
-            <div className="flex flex-col gap-2 max-w-2xl self-start">
-              <span className="font-label-bold text-label-bold text-on-surface-variant uppercase ml-4">Vector.OS</span>
-              <div className="bg-surface-container-lowest border border-on-surface border-l-4 border-l-primary-container p-6">
-                <p className="font-body-md text-body-md text-on-surface">System initialized. Memory bank loaded. Vector search parameters are locked. Awaiting initial prompt to establish behavioral baseline.</p>
-              </div>
-            </div>
-
-            {/* User Message */}
-            <div className="flex flex-col gap-2 max-w-2xl self-end items-end">
-              <span className="font-label-bold text-label-bold text-on-surface-variant uppercase mr-4">User_Admin</span>
-              <div className="bg-on-surface text-surface p-6 shadow-[2px_2px_0px_rgba(0,0,0,1)]">
-                <p className="font-body-md text-body-md">Analyze the structural logic of the latest RAG deployment. Highlight any heuristic deviations.</p>
-              </div>
-            </div>
-
-            {/* RAG Animation Streak */}
-            <div className="w-full flex justify-center py-4 opacity-70">
-              <div className="h-[1px] w-full bg-on-surface relative overflow-hidden">
-                <div className="absolute left-0 top-0 h-full w-1/4 bg-primary-container shadow-[0_0_10px_#ffff00] animate-slide"></div>
-              </div>
-            </div>
-
-            {/* AI Message */}
-            <div className="flex flex-col gap-2 max-w-2xl self-start">
-              <span className="font-label-bold text-label-bold text-on-surface-variant uppercase ml-4">Vector.OS</span>
-              <div className="bg-surface-container-lowest border border-on-surface border-l-4 border-l-primary-container p-6 relative">
-                
-                {/* Retrieval Citation Badge */}
-                <div className="absolute -top-3 -right-3 bg-surface border border-on-surface px-2 py-1 flex items-center gap-1 shadow-[2px_2px_0px_rgba(0,0,0,1)]">
-                  <span className="material-symbols-outlined text-[12px]">library_books</span>
-                  <span className="font-mono-data text-[10px]">DOC_441</span>
+            {messages.map((msg, idx) => (
+              msg.role === "assistant" ? (
+                <div key={idx} className="flex flex-col gap-2 max-w-2xl self-start">
+                  <span className="font-label-bold text-label-bold text-on-surface-variant uppercase ml-4">Vector.OS</span>
+                  <div className="bg-surface-container-lowest border border-on-surface border-l-4 border-l-primary-container p-6">
+                    <p className="font-body-md text-body-md text-on-surface whitespace-pre-wrap">{msg.content}</p>
+                  </div>
                 </div>
-                
-                <p className="font-body-md text-body-md text-on-surface">Query processed. Cross-referencing deployment logs...</p>
-                <p className="font-body-md text-body-md text-on-surface mt-4">Analysis indicates a 98% alignment with core structural parameters. A minor heuristic deviation was detected in the secondary vector matching algorithm, resulting in a slight bias towards recency over absolute relevance.</p>
-                
-                <div className="mt-4 p-3 border border-on-surface bg-surface flex items-center justify-between">
-                  <span className="font-mono-data text-mono-data text-on-surface-variant">View full technical breakdown?</span>
-                  <button className="px-4 py-1 border border-on-surface font-label-bold text-label-bold hover:bg-primary-container transition-colors">EXECUTE</button>
+              ) : (
+                <div key={idx} className="flex flex-col gap-2 max-w-2xl self-end items-end">
+                  <span className="font-label-bold text-label-bold text-on-surface-variant uppercase mr-4">{user?.displayName || "User_Admin"}</span>
+                  <div className="bg-on-surface text-surface p-6 shadow-[2px_2px_0px_rgba(0,0,0,1)]">
+                    <p className="font-body-md text-body-md whitespace-pre-wrap">{msg.content}</p>
+                  </div>
+                </div>
+              )
+            ))}
+
+            {/* RAG Animation Streak (Loading State) */}
+            {isLoading && (
+              <div className="w-full flex justify-center py-4 opacity-70">
+                <div className="h-[1px] w-full bg-on-surface relative overflow-hidden">
+                  <div className="absolute left-0 top-0 h-full w-1/4 bg-primary-container shadow-[0_0_10px_#ffff00] animate-slide"></div>
                 </div>
               </div>
-            </div>
-
+            )}
+            
+            <div ref={messagesEndRef} />
           </div>
 
           {/* Input Area */}
