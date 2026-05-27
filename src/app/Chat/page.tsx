@@ -5,11 +5,14 @@ import Link from "next/link";
 import { User, onAuthStateChanged } from "firebase/auth";
 import { FIREBASE_AUTH } from "../../../FirebaseConfig";
 import TopNavBar from "../components/TopNavBar";
+import { getChatSessions, createChatSession, saveMessageToSession } from "../../services/firebaseChatService";
 
 export default function ChatPage() {
   const [inputText, setInputText] = useState("");
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<{role: string, content: string}[]>([
     {
       role: "assistant", 
@@ -19,8 +22,12 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, async (currentUser) => {
       setUser(currentUser);
+      if (currentUser) {
+        const userSessions = await getChatSessions(currentUser.uid);
+        setSessions(userSessions);
+      }
     });
     return () => unsubscribe();
   }, []);
@@ -33,6 +40,21 @@ export default function ChatPage() {
     scrollToBottom();
   }, [messages, isLoading]);
 
+  const handleNewChat = () => {
+    setCurrentSessionId(null);
+    setMessages([
+      {
+        role: "assistant", 
+        content: "Hi, I'm Persona, your personalized AI assistant. How can I help you today?"
+      }
+    ]);
+  };
+
+  const handleSelectSession = (session: any) => {
+    setCurrentSessionId(session.id);
+    setMessages(session.messages || []);
+  };
+
   const handleSendMessage = async () => {
     if (!inputText.trim() || isLoading) return;
     
@@ -43,7 +65,23 @@ export default function ChatPage() {
     setMessages(newMessages);
     setIsLoading(true);
 
+    let activeSessionId = currentSessionId;
+
     try {
+      if (user) {
+        if (!activeSessionId) {
+          const titleWords = userMessage.split(' ').slice(0, 4);
+          const title = titleWords.join(' ') + (userMessage.split(' ').length > 4 ? '...' : '');
+          activeSessionId = await createChatSession(user.uid, title, newMessages);
+          setCurrentSessionId(activeSessionId);
+          
+          const updatedSessions = await getChatSessions(user.uid);
+          setSessions(updatedSessions);
+        } else {
+          await saveMessageToSession(user.uid, activeSessionId, [{ role: "user", content: userMessage }]);
+        }
+      }
+
       const historyForApi = newMessages.map(m => ({ role: m.role, content: m.content }));
       
       const response = await fetch("http://localhost:5000/api/chat", {
@@ -61,7 +99,13 @@ export default function ChatPage() {
       }
 
       const data = await response.json();
-      setMessages(prev => [...prev, { role: "assistant", content: data.response }]);
+      const aiMessage = { role: "assistant", content: data.response };
+      
+      setMessages(prev => [...prev, aiMessage]);
+      
+      if (user && activeSessionId) {
+        await saveMessageToSession(user.uid, activeSessionId, [aiMessage]);
+      }
 
     } catch (error) {
       console.error("Chat error:", error);
@@ -86,52 +130,36 @@ export default function ChatPage() {
       {/* Chat History SideNavBar */}
       <nav className="hidden lg:flex flex-col fixed left-0 top-16 h-[calc(100vh-4rem)] z-40 bg-surface dark:bg-background border-r border-on-surface dark:border-outline w-64 no-grid">
         <div className="p-4 border-b border-on-surface">
-          <button className="w-full py-3 bg-on-surface text-surface font-label-bold text-label-bold border border-on-surface hover:bg-primary-container hover:text-on-surface transition-colors flex items-center justify-center gap-2">
+          <button 
+            onClick={handleNewChat}
+            className="w-full py-3 bg-on-surface text-surface font-label-bold text-label-bold border border-on-surface hover:bg-primary-container hover:text-on-surface transition-colors flex items-center justify-center gap-2"
+          >
             <span className="material-symbols-outlined text-[18px]">add</span>
             New Chat
           </button>
         </div>
         
-        <div className="flex-1 py-4 flex flex-col overflow-y-auto px-2 gap-6">
-          
-          {/* Today */}
-          <div className="flex flex-col gap-1">
-            <span className="px-4 text-[10px] font-label-bold text-on-surface-variant mb-1 uppercase tracking-wider">Today</span>
-            <Link href="#" className="px-4 py-2 flex items-center gap-3 text-on-surface bg-surface-container-highest border border-on-surface font-label-bold text-sm transition-all">
-              <span className="material-symbols-outlined text-[16px]">chat_bubble</span>
-              <span className="truncate">RAG Deployment Logic</span>
-            </Link>
-            <Link href="#" className="px-4 py-2 flex items-center gap-3 text-on-surface hover:bg-surface-container-highest font-label-bold text-sm transition-all border border-transparent hover:border-on-surface/20">
-              <span className="material-symbols-outlined text-[16px]">chat_bubble</span>
-              <span className="truncate">Explain Vector Search</span>
-            </Link>
-          </div>
-
-          {/* Yesterday */}
-          <div className="flex flex-col gap-1">
-            <span className="px-4 text-[10px] font-label-bold text-on-surface-variant mb-1 uppercase tracking-wider">Yesterday</span>
-            <Link href="#" className="px-4 py-2 flex items-center gap-3 text-on-surface hover:bg-surface-container-highest font-label-bold text-sm transition-all border border-transparent hover:border-on-surface/20">
-              <span className="material-symbols-outlined text-[16px]">chat_bubble</span>
-              <span className="truncate">React State Management</span>
-            </Link>
-            <Link href="#" className="px-4 py-2 flex items-center gap-3 text-on-surface hover:bg-surface-container-highest font-label-bold text-sm transition-all border border-transparent hover:border-on-surface/20">
-              <span className="material-symbols-outlined text-[16px]">chat_bubble</span>
-              <span className="truncate">Firebase Auth Setup</span>
-            </Link>
-          </div>
-
-          {/* Previous 7 Days */}
-          <div className="flex flex-col gap-1">
-            <span className="px-4 text-[10px] font-label-bold text-on-surface-variant mb-1 uppercase tracking-wider">Previous 7 Days</span>
-            <Link href="#" className="px-4 py-2 flex items-center gap-3 text-on-surface hover:bg-surface-container-highest font-label-bold text-sm transition-all border border-transparent hover:border-on-surface/20">
-              <span className="material-symbols-outlined text-[16px]">chat_bubble</span>
-              <span className="truncate">Tailwind CSS Grids</span>
-            </Link>
-            <Link href="#" className="px-4 py-2 flex items-center gap-3 text-on-surface hover:bg-surface-container-highest font-label-bold text-sm transition-all border border-transparent hover:border-on-surface/20">
-              <span className="material-symbols-outlined text-[16px]">chat_bubble</span>
-              <span className="truncate">Next.js Routing</span>
-            </Link>
-          </div>
+        <div className="flex-1 py-4 flex flex-col overflow-y-auto px-2 gap-2">
+          {sessions.length > 0 ? (
+            sessions.map(session => (
+              <button
+                key={session.id}
+                onClick={() => handleSelectSession(session)}
+                className={`px-4 py-3 flex items-center gap-3 text-left text-on-surface font-label-bold text-sm transition-all border ${
+                  currentSessionId === session.id 
+                    ? 'bg-surface-container-highest border-on-surface' 
+                    : 'border-transparent hover:bg-surface-container-highest hover:border-on-surface/20'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[16px]">chat_bubble</span>
+                <span className="truncate">{session.title}</span>
+              </button>
+            ))
+          ) : (
+            <div className="px-4 py-2 text-xs font-mono-data text-on-surface-variant text-center mt-4">
+              No previous sessions
+            </div>
+          )}
         </div>
         
         <div className="p-4 border-t border-on-surface flex flex-col gap-1">
@@ -165,8 +193,7 @@ export default function ChatPage() {
           {/* Chat Header */}
           <div className="p-6 border-b border-on-surface bg-surface z-10 flex justify-between items-center">
             <div>
-              <h2 className="font-headline-lg text-headline-lg text-on-surface tracking-tight">Session Stream</h2>
-              <p className="font-mono-data text-mono-data text-on-surface-variant mt-1">ID: VEC-892-ALPHA</p>
+              <h2 className="font-headline-lg text-headline-lg text-on-surface tracking-tight">Chat Session</h2>
             </div>
             <div className="flex gap-2">
               <button className="p-2 border border-on-surface hover:bg-primary-container transition-colors bg-surface">
@@ -184,7 +211,7 @@ export default function ChatPage() {
             {messages.map((msg, idx) => (
               msg.role === "assistant" ? (
                 <div key={idx} className="flex flex-col gap-2 max-w-2xl self-start">
-                  <span className="font-label-bold text-label-bold text-on-surface-variant uppercase ml-4">Vector.OS</span>
+                  <span className="font-label-bold text-label-bold text-on-surface-variant ml-4">Persona</span>
                   <div className="bg-surface-container-lowest border border-on-surface border-l-4 border-l-primary-container p-6">
                     <p className="font-body-md text-body-md text-on-surface whitespace-pre-wrap">{msg.content}</p>
                   </div>
@@ -213,7 +240,7 @@ export default function ChatPage() {
 
           {/* Input Area */}
           <div className="p-6 md:px-margin-desktop md:py-6 bg-surface border-t border-on-surface z-10">
-            <div className="relative w-full max-w-4xl mx-auto flex items-end border border-on-surface bg-surface-container-lowest focus-within:border-2 focus-within:-m-[1px]">
+            <div className="relative w-full max-w-4xl mx-auto flex items-end border border-on-surface bg-surface-container-lowest focus-within:ring-1 focus-within:ring-on-surface">
               <textarea 
                 className="w-full bg-transparent border-none focus:ring-0 resize-none py-4 pl-4 pr-12 font-body-md text-body-md text-on-surface placeholder-on-surface-variant/50 min-h-[60px] outline-none" 
                 placeholder="Input parameter or query..." 
