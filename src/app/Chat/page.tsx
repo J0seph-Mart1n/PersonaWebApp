@@ -12,6 +12,7 @@ export default function ChatPage() {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [sessions, setSessions] = useState<any[]>([]);
+  const [isSessionsLoading, setIsSessionsLoading] = useState(true);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<{role: string, content: string}[]>([
     {
@@ -25,8 +26,12 @@ export default function ChatPage() {
     const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
+        setIsSessionsLoading(true);
         const userSessions = await getChatSessions(currentUser.uid);
         setSessions(userSessions);
+        setIsSessionsLoading(false);
+      } else {
+        setIsSessionsLoading(false);
       }
     });
     return () => unsubscribe();
@@ -140,7 +145,14 @@ export default function ChatPage() {
         </div>
         
         <div className="flex-1 py-4 flex flex-col overflow-y-auto px-2 gap-2">
-          {sessions.length > 0 ? (
+          {isSessionsLoading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="px-4 py-3 flex items-center gap-3 border border-transparent animate-pulse">
+                <div className="w-4 h-4 bg-on-surface/20 shrink-0"></div>
+                <div className="h-4 bg-on-surface/20 w-full"></div>
+              </div>
+            ))
+          ) : sessions.length > 0 ? (
             sessions.map(session => (
               <button
                 key={session.id}

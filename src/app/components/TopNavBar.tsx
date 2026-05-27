@@ -7,12 +7,14 @@ import { FIREBASE_AUTH } from "../../../FirebaseConfig";
 
 export default function TopNavBar() {
   const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, (currentUser) => {
       setUser(currentUser);
+      setAuthLoading(false);
     });
     return () => unsubscribe();
   }, []);
@@ -81,7 +83,9 @@ export default function TopNavBar() {
           <span className="material-symbols-outlined">settings</span>
         </button>
         
-        {user ? (
+        {authLoading ? (
+          <div className="w-24 h-10 bg-on-surface/10 animate-pulse border border-transparent"></div>
+        ) : user ? (
           <div className="relative" ref={menuRef}>
             <button 
               onClick={() => setIsMenuOpen(!isMenuOpen)}

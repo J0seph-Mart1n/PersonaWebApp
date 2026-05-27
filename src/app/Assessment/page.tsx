@@ -105,13 +105,7 @@ export default function AssessmentPage() {
   // Determine if the Next button should be disabled (user hasn't answered yet)
   const hasAnsweredCurrent = answers[currentQuestion.id] !== undefined;
 
-  if (authChecking) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-surface">
-        <p className="font-mono-data text-on-surface-variant">Loading...</p>
-      </div>
-    );
-  }
+  // Auth checking is now handled locally in components like TopNavBar
 
   return (
     <div className="min-h-screen flex flex-col font-body-md text-on-surface antialiased overflow-x-hidden">
@@ -124,7 +118,14 @@ export default function AssessmentPage() {
 
       {/* Main Canvas */}
       <main className="flex-grow flex items-center justify-center p-margin-mobile md:p-margin-desktop mt-16 relative z-10 ">
-        {isCompleted ? (
+        {authChecking ? (
+          /* --- SKELETON LOADING --- */
+          <div className="w-full max-w-2xl bg-surface/90 backdrop-blur-md border border-on-surface relative hard-shadow p-8 md:p-12 text-center animate-pulse">
+             <div className="h-10 bg-on-surface/20 w-3/4 mx-auto mb-6"></div>
+             <div className="h-4 bg-on-surface/20 w-1/2 mx-auto mb-12"></div>
+             <div className="h-12 bg-on-surface/20 w-48 mx-auto"></div>
+          </div>
+        ) : isCompleted ? (
           /* --- RESULTS SUMMARY --- */
           <ResultsSummary answers={answers} onRetake={handleRetake} user={user} isHistorical={isHistorical} />
         ) : !isStarted ? (

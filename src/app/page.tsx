@@ -10,22 +10,7 @@ import { FIREBASE_AUTH } from "../../FirebaseConfig";
 import Footer from "./components/Footer";
 
 export default function Home() {
-  const [authChecking, setAuthChecking] = useState(true);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, () => {
-      setAuthChecking(false);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  if (authChecking) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-surface">
-        <p className="font-mono-data text-on-surface-variant">Loading...</p>
-      </div>
-    );
-  }
+  // Auth checking is now handled locally in components like TopNavBar
 
   return (
     <>
