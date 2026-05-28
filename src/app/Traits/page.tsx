@@ -6,13 +6,69 @@ import { User, onAuthStateChanged } from "firebase/auth";
 import { FIREBASE_AUTH } from "../../../FirebaseConfig";
 import TopNavBar from "../components/TopNavBar";
 import UserGraph from "../components/UserGraph";
+import { getLatestAssessmentFromFirebase } from "../../services/firebaseAssessmentService";
+import { questions } from "../../data/questions";
+
+const LIKERT_LABELS = ["", "Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"];
+const DICHOTOMIES: [string, string][] = [["E", "I"], ["S", "N"], ["T", "F"], ["J", "P"]];
+const TRAITS = ["E", "S", "T", "J", "I", "P", "F", "N"];
+
+const TRAIT_NAMES: Record<string, string> = {
+  E: "Extraversion", I: "Introversion",
+  S: "Sensing",      N: "Intuition",
+  T: "Thinking",     F: "Feeling",
+  J: "Judging",      P: "Perceiving",
+};
+
+const calculateOctagonPoints = (radius: number) => {
+  const points = [];
+  for (let i = 0; i < 8; i++) {
+    const angle = -Math.PI / 2 + (i * Math.PI) / 4;
+    const x = 50 + Math.cos(angle) * radius;
+    const y = 50 + Math.sin(angle) * radius;
+    points.push(`${x},${y}`);
+  }
+  return points.join(" ");
+};
 
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
+  const [traitScores, setTraitScores] = useState<Record<string, number> | null>(null);
+  const [mbtiVector, setMbtiVector] = useState<string | null>(null);
+  const [isAssessmentLoading, setIsAssessmentLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, async (currentUser) => {
       setUser(currentUser);
+      if (currentUser) {
+        setIsAssessmentLoading(true);
+        const assessment = await getLatestAssessmentFromFirebase(currentUser.uid);
+        if (assessment) {
+          const answers: Record<number, number> = {};
+          assessment.detailedAnswers.forEach((ans: any) => {
+            const q = questions.find(q => q.text === ans.question);
+            if (q) {
+              const score = LIKERT_LABELS.indexOf(ans.answer);
+              if (score > 0) answers[q.id] = score;
+            }
+          });
+
+          const scores: Record<string, number> = {};
+          DICHOTOMIES.forEach(([traitA, traitB]) => {
+            const scoreA = questions.filter(q => q.trait === traitA).reduce((sum, q) => sum + (answers[q.id] || 3), 0);
+            const scoreB = questions.filter(q => q.trait === traitB).reduce((sum, q) => sum + (answers[q.id] || 3), 0);
+            const total = scoreA + scoreB;
+            scores[traitA] = scoreA / total;
+            scores[traitB] = scoreB / total;
+          });
+
+          setTraitScores(scores);
+          setMbtiVector(assessment.mbtiVector || null);
+        }
+        setIsAssessmentLoading(false);
+      } else {
+        setIsAssessmentLoading(false);
+      }
     });
     return () => unsubscribe();
   }, []);
@@ -35,76 +91,88 @@ export default function DashboardPage() {
           
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
             
-            {/* Left Column: Radar Chart & Stats */}
-            <div className="xl:col-span-5 flex flex-col gap-8">
+            {/* Left Column: Radar Chart */}
+            <div className="xl:col-span-5 flex flex-col">
               
               {/* Radar Chart Card */}
-              <section className="bg-surface border border-on-surface p-6 vector-shadow-lg relative overflow-hidden">
+              <section className="bg-surface border border-on-surface p-6 vector-shadow-lg relative overflow-hidden flex-1 flex flex-col">
                 <div className="absolute top-0 right-0 w-8 h-8 border-l border-b border-on-surface bg-surface-container"></div>
                 
-                <div className="flex justify-between items-start mb-6">
+                <div className="flex justify-between items-start mb-6 shrink-0">
                   <h2 className="font-headline-lg text-headline-lg-mobile text-on-surface">BEHAVIORAL RADAR</h2>
                   <span className="font-mono-data text-mono-data text-on-surface bg-primary-container px-2 py-1 border border-on-surface">LIVE</span>
                 </div>
                 
-                {/* SVG Radar Chart */}
-                <div className="w-full aspect-square relative flex items-center justify-center my-4">
-                  <svg className="w-full h-full max-w-[300px]" viewBox="0 0 100 100">
-                    {/* Concentric Hexagons */}
-                    <polygon className="text-on-surface-variant" fill="none" opacity="0.5" points="50,5 90,27 90,73 50,95 10,73 10,27" stroke="currentColor" strokeWidth="0.5"></polygon>
-                    <polygon className="text-on-surface-variant" fill="none" opacity="0.5" points="50,20 77,35 77,65 50,80 23,65 23,35" stroke="currentColor" strokeWidth="0.5"></polygon>
-                    <polygon className="text-on-surface-variant" fill="none" opacity="0.5" points="50,35 63,43 63,57 50,65 37,57 37,43" stroke="currentColor" strokeWidth="0.5"></polygon>
-                    
-                    {/* Axes */}
-                    <line className="text-on-surface-variant" stroke="currentColor" strokeWidth="0.5" x1="50" x2="50" y1="50" y2="5"></line>
-                    <line className="text-on-surface-variant" stroke="currentColor" strokeWidth="0.5" x1="50" x2="90" y1="50" y2="27"></line>
-                    <line className="text-on-surface-variant" stroke="currentColor" strokeWidth="0.5" x1="50" x2="90" y1="50" y2="73"></line>
-                    <line className="text-on-surface-variant" stroke="currentColor" strokeWidth="0.5" x1="50" x2="50" y1="50" y2="95"></line>
-                    <line className="text-on-surface-variant" stroke="currentColor" strokeWidth="0.5" x1="50" x2="10" y1="50" y2="73"></line>
-                    <line className="text-on-surface-variant" stroke="currentColor" strokeWidth="0.5" x1="50" x2="10" y1="50" y2="27"></line>
-                    
-                    {/* Data Polygon */}
-                    <polygon className="fill-primary-container/20 stroke-primary-container" points="50,15 80,30 70,60 50,85 20,65 30,35" strokeWidth="2"></polygon>
-                    
-                    {/* Data Points */}
-                    <circle className="text-on-surface" cx="50" cy="15" fill="currentColor" r="2"></circle>
-                    <circle className="text-on-surface" cx="80" cy="30" fill="currentColor" r="2"></circle>
-                    <circle className="text-on-surface" cx="70" cy="60" fill="currentColor" r="2"></circle>
-                    <circle className="text-on-surface" cx="50" cy="85" fill="currentColor" r="2"></circle>
-                    <circle className="text-on-surface" cx="20" cy="65" fill="currentColor" r="2"></circle>
-                    <circle className="text-on-surface" cx="30" cy="35" fill="currentColor" r="2"></circle>
-                  </svg>
-                  
-                  {/* Labels */}
-                  <div className="absolute inset-0 pointer-events-none">
-                    <span className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-4 font-mono-data text-[10px] bg-surface px-1">Logic</span>
-                    <span className="absolute top-[20%] right-0 translate-x-4 font-mono-data text-[10px] bg-surface px-1">Creativity</span>
-                    <span className="absolute bottom-[20%] right-0 translate-x-4 font-mono-data text-[10px] bg-surface px-1">Empathy</span>
-                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-4 font-mono-data text-[10px] bg-surface px-1">Discipline</span>
-                    <span className="absolute bottom-[20%] left-0 -translate-x-4 font-mono-data text-[10px] bg-surface px-1">Risk</span>
-                    <span className="absolute top-[20%] left-0 -translate-x-4 font-mono-data text-[10px] bg-surface px-1">Speed</span>
+                {isAssessmentLoading ? (
+                  <div className="w-full aspect-square relative flex items-center justify-center my-auto animate-pulse">
+                    <div className="w-3/4 h-3/4 border-2 border-on-surface/20 rounded-full"></div>
                   </div>
-                </div>
+                ) : traitScores ? (
+                  /* SVG Radar Chart */
+                  <div className="w-full aspect-square relative flex items-center justify-center my-auto">
+                    <svg className="w-full h-full max-w-[450px]" viewBox="0 0 100 100">
+                      {/* Concentric Octagons */}
+                      <polygon className="text-on-surface-variant" fill="none" opacity="0.5" points={calculateOctagonPoints(45)} stroke="currentColor" strokeWidth="0.5"></polygon>
+                      <polygon className="text-on-surface-variant" fill="none" opacity="0.5" points={calculateOctagonPoints(30)} stroke="currentColor" strokeWidth="0.5"></polygon>
+                      <polygon className="text-on-surface-variant" fill="none" opacity="0.5" points={calculateOctagonPoints(15)} stroke="currentColor" strokeWidth="0.5"></polygon>
+                      
+                      {/* Axes */}
+                      {Array.from({ length: 4 }).map((_, i) => {
+                         const a1 = -Math.PI / 2 + (i * Math.PI) / 4;
+                         const a2 = a1 + Math.PI;
+                         return (
+                           <line key={i} className="text-on-surface-variant" stroke="currentColor" strokeWidth="0.5" 
+                             x1={50 + Math.cos(a1) * 45} y1={50 + Math.sin(a1) * 45} 
+                             x2={50 + Math.cos(a2) * 45} y2={50 + Math.sin(a2) * 45} />
+                         );
+                      })}
+                      
+                      {/* Data Polygon */}
+                      <polygon className="fill-primary-container/20 stroke-primary-container" points={TRAITS.map((trait, i) => {
+                        const score = traitScores[trait]; 
+                        const radius = score * 50;
+                        const angle = -Math.PI / 2 + (i * Math.PI) / 4;
+                        return `${50 + Math.cos(angle) * radius},${50 + Math.sin(angle) * radius}`;
+                      }).join(" ")} strokeWidth="1.5"></polygon>
+                      
+                      {/* Data Points */}
+                      {TRAITS.map((trait, i) => {
+                        const score = traitScores[trait];
+                        const radius = score * 50;
+                        const angle = -Math.PI / 2 + (i * Math.PI) / 4;
+                        return <circle key={trait} className="text-on-surface" cx={50 + Math.cos(angle) * radius} cy={50 + Math.sin(angle) * radius} fill="currentColor" r="1.5"></circle>;
+                      })}
+                    </svg>
+                    
+                    {/* Labels */}
+                    <div className="absolute inset-0 pointer-events-none">
+                      <span className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1 font-mono-data text-[16px] bg-surface px-1">{TRAIT_NAMES["E"]}</span>
+                      <span className="absolute top-[15%] right-0 translate-x-1 font-mono-data text-[16px] bg-surface px-1">{TRAIT_NAMES["S"]}</span>
+                      <span className="absolute top-1/2 right-0 translate-x-2 -translate-y-1/2 font-mono-data text-[16px] bg-surface px-1">{TRAIT_NAMES["T"]}</span>
+                      <span className="absolute bottom-[15%] right-0 translate-x-1 font-mono-data text-[16px] bg-surface px-1">{TRAIT_NAMES["J"]}</span>
+                      <span className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1 font-mono-data text-[16px] bg-surface px-1">{TRAIT_NAMES["I"]}</span>
+                      <span className="absolute bottom-[15%] left-0 -translate-x-1 font-mono-data text-[16px] bg-surface px-1">{TRAIT_NAMES["P"]}</span>
+                      <span className="absolute top-1/2 left-0 -translate-x-2 -translate-y-1/2 font-mono-data text-[16px] bg-surface px-1">{TRAIT_NAMES["F"]}</span>
+                      <span className="absolute top-[15%] left-0 -translate-x-1 font-mono-data text-[16px] bg-surface px-1">{TRAIT_NAMES["N"]}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="border border-on-surface/30 border-dashed p-8 flex flex-col items-center justify-center text-center gap-4 my-auto">
+                    <span className="material-symbols-outlined text-[40px] text-on-surface-variant">psychology</span>
+                    <p className="font-body-md text-on-surface-variant">No assessment data found. Complete the personality assessment to see your cognitive dichotomies.</p>
+                    <Link href="/Assessment" className="bg-on-surface text-surface px-6 py-2 font-label-bold text-label-bold uppercase tracking-widest hover:bg-primary-container hover:text-on-surface transition-colors border border-transparent btn-primary">
+                      Take Assessment
+                    </Link>
+                  </div>
+                )}
                 
-                <div className="mt-6 border-t border-on-surface pt-4">
+                <div className="mt-auto border-t border-on-surface pt-4 shrink-0">
                   <div className="flex justify-between items-center">
-                    <span className="font-mono-data text-mono-data text-on-surface-variant">DOMINANT TRAIT</span>
-                    <span className="font-label-bold text-label-bold text-on-surface">ANALYTICAL</span>
+                    <span className="font-mono-data text-mono-data text-on-surface-variant">DOMINANT TYPE</span>
+                    <span className="font-label-bold text-label-bold text-on-surface">{mbtiVector || "—"}</span>
                   </div>
                 </div>
               </section>
-
-              {/* Stats Strip */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-surface border border-on-surface p-4 vector-shadow">
-                  <span className="font-mono-data text-[10px] text-on-surface-variant block mb-1">COMPUTATION CYCLES</span>
-                  <span className="font-display-lg text-headline-lg-mobile text-on-surface">4.2M</span>
-                </div>
-                <div className="bg-surface border border-on-surface p-4 vector-shadow">
-                  <span className="font-mono-data text-[10px] text-on-surface-variant block mb-1">NODE DENSITY</span>
-                  <span className="font-display-lg text-headline-lg-mobile text-on-surface">88%</span>
-                </div>
-              </div>
             </div>
 
             {/* Right Column: 3D Vector Graph & Controls */}
