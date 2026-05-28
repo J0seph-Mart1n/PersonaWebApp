@@ -79,9 +79,12 @@ export default function TopNavBar() {
         >
           MBTI Test
         </Link>
-        <button className="text-primary dark:text-primary-fixed hover:text-primary-container transition-colors p-2">
+        <Link 
+          className="text-primary dark:text-primary-fixed hover:text-primary-container transition-colors p-2"
+          href="/Settings"
+        >
           <span className="material-symbols-outlined">settings</span>
-        </button>
+        </Link>
         
         {authLoading ? (
           <div className="w-24 h-10 bg-on-surface/10 animate-pulse border border-transparent"></div>
