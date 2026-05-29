@@ -35,6 +35,9 @@ export default function UserGraph({ user }: { user: User | null }) {
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const userId = user?.uid || "";
 
+  const [fetchError, setFetchError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+
   useEffect(() => {
     // Resize the canvas automatically to fit its container
     if (containerRef.current) {
@@ -47,6 +50,7 @@ export default function UserGraph({ user }: { user: User | null }) {
     // Fetch Graph Data from your Express/Next.js Backend
     if (!userId) return;
 
+    setFetchError(false);
     fetch(`http://localhost:5000/api/graph/${userId}`)
       .then((res) => {
         if (!res.ok) throw new Error("Network response was not ok");
@@ -55,12 +59,25 @@ export default function UserGraph({ user }: { user: User | null }) {
       .then((data) => {
         if (data && data.nodes) setGraphData(data);
       })
-      .catch((err) => console.error("Failed to load graph:", err));
-  }, [userId]);
+      .catch((err) => {
+        console.error("Failed to load graph:", err);
+        setFetchError(true);
+      });
+  }, [userId, retryCount]);
 
   return (
     <div ref={containerRef} className="w-full h-full min-h-[500px]">
-      {graphData.nodes.length > 0 ? (
+      {fetchError ? (
+        <div className="w-full h-full flex flex-col items-center justify-center font-mono-data text-on-surface-variant gap-4 bg-surface-container-lowest">
+          <span className="text-[#f87171] border border-[#f87171] px-4 py-2 bg-[#f87171]/10">ERROR: CONNECTION TO VECTOR SPACE LOST</span>
+          <button 
+            onClick={() => setRetryCount(prev => prev + 1)}
+            className="border border-on-surface px-6 py-2 hover:bg-on-surface hover:text-surface transition-colors uppercase tracking-widest text-sm vector-shadow"
+          >
+            Retry Connection
+          </button>
+        </div>
+      ) : graphData.nodes.length > 0 ? (
         <ForceGraph3D
           width={dimensions.width}
           height={dimensions.height}

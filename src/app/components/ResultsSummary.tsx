@@ -29,6 +29,7 @@ const TRAIT_NAMES: Record<string, string> = {
 export default function ResultsSummary({ answers, onRetake, user, isHistorical = false }: ResultsSummaryProps) {
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState(false);
 
   // Group questions by their dichotomy pair
   const dichotomies: [string, string][] = [["E", "I"], ["S", "N"], ["T", "F"], ["J", "P"]];
@@ -40,6 +41,8 @@ export default function ResultsSummary({ answers, onRetake, user, isHistorical =
     }
     
     setIsSaving(true);
+    setSaveError(false);
+
     try {
       // Calculate 4-letter MBTI Vector dynamically
       const mbtiVector = dichotomies.map(([traitA, traitB]) => {
@@ -77,11 +80,10 @@ export default function ResultsSummary({ answers, onRetake, user, isHistorical =
 
       if (!response.ok) throw new Error("Failed to save to backend.");
 
-      alert("Results saved and processed successfully!");
       router.push("/");
     } catch (error) {
       console.error(error);
-      alert("An error occurred while saving.");
+      setSaveError(true);
     } finally {
       setIsSaving(false);
     }
@@ -177,6 +179,15 @@ export default function ResultsSummary({ answers, onRetake, user, isHistorical =
             })}
           </div>
         </div>
+
+        {/* Error State */}
+        {saveError && (
+          <div className="w-full flex items-center justify-between p-4 mb-4 border border-[#f87171] bg-[#f87171]/10 mt-6">
+            <span className="text-[#f87171] font-mono-data text-xs">
+              ERROR: FAILED TO SYNCHRONIZE RESULTS WITH VECTOR SPACE
+            </span>
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex gap-4 pt-4 mt-8 border-t border-on-surface">

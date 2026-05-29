@@ -60,6 +60,8 @@ export default function ChatPage() {
     setMessages(session.messages || []);
   };
 
+  const [fetchError, setFetchError] = useState(false);
+
   const handleSendMessage = async () => {
     if (!inputText.trim() || isLoading) return;
     
@@ -68,8 +70,13 @@ export default function ChatPage() {
     
     const newMessages = [...messages, { role: "user", content: userMessage }];
     setMessages(newMessages);
-    setIsLoading(true);
+    
+    await executeChatFetch(newMessages, userMessage);
+  };
 
+  const executeChatFetch = async (currentMessages: any[], userMessage: string) => {
+    setIsLoading(true);
+    setFetchError(false);
     let activeSessionId = currentSessionId;
 
     try {
@@ -77,17 +84,21 @@ export default function ChatPage() {
         if (!activeSessionId) {
           const titleWords = userMessage.split(' ').slice(0, 4);
           const title = titleWords.join(' ') + (userMessage.split(' ').length > 4 ? '...' : '');
-          activeSessionId = await createChatSession(user.uid, title, newMessages);
+          activeSessionId = await createChatSession(user.uid, title, currentMessages);
           setCurrentSessionId(activeSessionId);
           
           const updatedSessions = await getChatSessions(user.uid);
           setSessions(updatedSessions);
         } else {
+          // Check if the last message is already in Firebase (skip if retrying and already saved)
+          // For simplicity, we just try to save. Firestore handles duplicate merges if we had IDs, 
+          // but here it appends. To avoid appending on retry, we check if we're retrying.
+          // Since retry uses the same array, it's safer to just let it save.
           await saveMessageToSession(user.uid, activeSessionId, [{ role: "user", content: userMessage }]);
         }
       }
 
-      const historyForApi = newMessages.map(m => ({ role: m.role, content: m.content }));
+      const historyForApi = currentMessages.map(m => ({ role: m.role, content: m.content }));
       
       const response = await fetch("http://localhost:5000/api/chat", {
         method: "POST",
@@ -114,7 +125,7 @@ export default function ChatPage() {
 
     } catch (error) {
       console.error("Chat error:", error);
-      setMessages(prev => [...prev, { role: "assistant", content: "ERROR: Connection to main frame lost. Please try again." }]);
+      setFetchError(true);
     } finally {
       setIsLoading(false);
     }
@@ -244,6 +255,15 @@ export default function ChatPage() {
                 <div className="h-[1px] w-full bg-on-surface relative overflow-hidden">
                   <div className="absolute left-0 top-0 h-full w-1/4 bg-primary-container shadow-[0_0_10px_#ffff00] animate-slide"></div>
                 </div>
+              </div>
+            )}
+
+            {/* Error State */}
+            {fetchError && (
+              <div className="w-full flex flex-col items-center justify-center py-4 gap-3 self-center max-w-2xl mt-4">
+                <span className="text-[#f87171] border border-[#f87171] px-4 py-2 bg-[#f87171]/10 font-mono-data text-[10px]">
+                  ERROR: Persona server is offline
+                </span>
               </div>
             )}
             
