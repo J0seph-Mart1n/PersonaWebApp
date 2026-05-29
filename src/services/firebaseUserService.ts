@@ -3,8 +3,6 @@ import { FIREBASE_DB } from "../../FirebaseConfig";
 
 export interface UserProfile {
   githubUrl?: string;
-  linkedinUrl?: string;
-  instagramUrl?: string;
 }
 
 export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {

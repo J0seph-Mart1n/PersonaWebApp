@@ -9,11 +9,11 @@ import { getUserProfile, updateUserProfile } from "../../services/firebaseUserSe
 export default function SettingsPage() {
   const [user, setUser] = useState<User | null>(null);
   const [githubUrl, setGithubUrl] = useState("");
-  const [linkedinUrl, setLinkedinUrl] = useState("");
-  const [instagramUrl, setInstagramUrl] = useState("");
-  
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<"idle" | "success" | "error">("idle");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -24,8 +24,6 @@ export default function SettingsPage() {
         const profile = await getUserProfile(currentUser.uid);
         if (profile) {
           setGithubUrl(profile.githubUrl || "");
-          setLinkedinUrl(profile.linkedinUrl || "");
-          setInstagramUrl(profile.instagramUrl || "");
         }
         setIsLoading(false);
       } else {
@@ -44,8 +42,6 @@ export default function SettingsPage() {
     
     const success = await updateUserProfile(user.uid, {
       githubUrl,
-      linkedinUrl,
-      instagramUrl,
     });
     
     setIsSaving(false);
@@ -53,6 +49,36 @@ export default function SettingsPage() {
     
     if (success) {
       setTimeout(() => setSaveStatus("idle"), 3000);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!user || !resumeFile) return;
+    
+    setIsUploading(true);
+    setUploadStatus("idle");
+    
+    try {
+      const formData = new FormData();
+      formData.append("userId", user.uid);
+      formData.append("platform", "resume");
+      formData.append("resumeFile", resumeFile);
+
+      const response = await fetch("http://localhost:5000/api/ingest/social", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error("Upload failed");
+      
+      setUploadStatus("success");
+      setTimeout(() => setUploadStatus("idle"), 3000);
+      setResumeFile(null);
+    } catch (error) {
+      console.error(error);
+      setUploadStatus("error");
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -80,7 +106,7 @@ export default function SettingsPage() {
 
             {isLoading ? (
               <div className="space-y-6 animate-pulse">
-                {[1, 2, 3].map((i) => (
+                {[1, 2].map((i) => (
                   <div key={i} className="flex flex-col gap-2">
                     <div className="h-4 w-24 bg-on-surface/20"></div>
                     <div className="h-12 w-full bg-surface-container border border-on-surface/20"></div>
@@ -105,41 +131,46 @@ export default function SettingsPage() {
                   />
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  <label htmlFor="linkedin" className="font-label-bold text-label-bold text-on-surface uppercase tracking-wider">
-                    LinkedIn URL
+                <div className="flex flex-col gap-2 pt-4 border-t border-on-surface/20">
+                  <label className="font-label-bold text-label-bold text-on-surface uppercase tracking-wider">
+                    Upload Resume
                   </label>
-                  <input
-                    type="url"
-                    id="linkedin"
-                    value={linkedinUrl}
-                    onChange={(e) => setLinkedinUrl(e.target.value)}
-                    placeholder="https://linkedin.com/in/username"
-                    className="bg-surface-container border border-on-surface p-3 font-body-md text-on-surface focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all"
-                  />
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                    <input
+                      type="file"
+                      id="resume"
+                      accept=".pdf,.doc,.docx"
+                      onChange={(e) => setResumeFile(e.target.files?.[0] || null)}
+                      className="bg-surface-container border border-on-surface p-2 font-body-md text-on-surface text-sm file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-label-bold file:bg-primary-container file:text-on-surface hover:file:bg-primary-container/80 transition-all flex-1 cursor-pointer w-full"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleUpload}
+                      disabled={isUploading || !resumeFile}
+                      className="bg-on-surface text-surface px-6 py-2 font-label-bold text-label-bold uppercase tracking-widest hover:bg-primary-container hover:text-on-surface transition-colors border border-transparent disabled:opacity-50 disabled:cursor-not-allowed vector-shadow shrink-0 h-[42px]"
+                    >
+                      {isUploading ? "UPLOADING..." : "UPLOAD"}
+                    </button>
+                    {uploadStatus === "success" && (
+                      <span className="font-mono-data text-mono-data text-[#4ade80] flex items-center gap-2 shrink-0">
+                        <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                      </span>
+                    )}
+                    {uploadStatus === "error" && (
+                      <span className="font-mono-data text-mono-data text-[#f87171] flex items-center gap-2 shrink-0">
+                        <span className="material-symbols-outlined text-[16px]">error</span>
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  <label htmlFor="instagram" className="font-label-bold text-label-bold text-on-surface uppercase tracking-wider">
-                    Instagram URL
-                  </label>
-                  <input
-                    type="url"
-                    id="instagram"
-                    value={instagramUrl}
-                    onChange={(e) => setInstagramUrl(e.target.value)}
-                    placeholder="https://instagram.com/username"
-                    className="bg-surface-container border border-on-surface p-3 font-body-md text-on-surface focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all"
-                  />
-                </div>
-
-                <div className="pt-4 flex items-center gap-4">
+                <div className="pt-6 mt-6 border-t border-on-surface/20 flex items-center gap-4">
                   <button
                     type="submit"
                     disabled={isSaving}
                     className="bg-on-surface text-surface px-8 py-3 font-label-bold text-label-bold uppercase tracking-widest hover:bg-primary-container hover:text-on-surface transition-colors border border-transparent disabled:opacity-50 disabled:cursor-not-allowed vector-shadow"
                   >
-                    {isSaving ? "SAVING..." : "SAVE CHANGES"}
+                    {isSaving ? "SAVING..." : "SAVE PROFILE"}
                   </button>
                   
                   {saveStatus === "success" && (
