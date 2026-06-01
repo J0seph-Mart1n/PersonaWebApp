@@ -43,11 +43,35 @@ export default function SettingsPage() {
     const success = await updateUserProfile(user.uid, {
       githubUrl,
     });
+
+    let ingestSuccess = true;
+    if (success && githubUrl) {
+      try {
+        const response = await fetch("http://localhost:5000/api/ingest/social", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId: user.uid,
+            platform: "github",
+            profileUrl: githubUrl,
+          }),
+        });
+        
+        if (!response.ok) {
+          ingestSuccess = false;
+        }
+      } catch (error) {
+        console.error("Failed to sync github profile:", error);
+        ingestSuccess = false;
+      }
+    }
     
     setIsSaving(false);
-    setSaveStatus(success ? "success" : "error");
+    setSaveStatus(success && ingestSuccess ? "success" : "error");
     
-    if (success) {
+    if (success && ingestSuccess) {
       setTimeout(() => setSaveStatus("idle"), 3000);
     }
   };
@@ -64,7 +88,7 @@ export default function SettingsPage() {
       formData.append("platform", "resume");
       formData.append("resumeFile", resumeFile);
 
-      const response = await fetch("http://localhost:5000/api/ingest/social", {
+      const response = await fetch("http://localhost:5000/api/ingest/resume", {
         method: "POST",
         body: formData,
       });
