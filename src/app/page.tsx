@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import InteractiveGrid from "./components/InteractiveGrid";
-import TopNavBar from "./components/TopNavBar";
 import "./globals.css";
 import { onAuthStateChanged } from "firebase/auth";
 import { FIREBASE_AUTH } from "../../FirebaseConfig";
@@ -17,11 +16,8 @@ export default function Home() {
       {/* Interactive Vector Grid Background */}
       <InteractiveGrid />
 
-      {/* TopNavBar */}
-      <TopNavBar />
-
       {/* Main Content */}
-      <main className="flex-grow z-10 pt-16 flex flex-col items-center justify-center min-h-screen relative px-margin-mobile md:px-margin-desktop">
+      <main className="flex-grow z-10 pt-8 flex flex-col items-center justify-center min-h-screen relative px-margin-mobile md:px-margin-desktop">
         {/* Structural quadrants lines overlay (Visual only) */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute left-1/2 top-0 bottom-0 w-[1px] bg-on-surface opacity-10 hidden lg:block"></div>

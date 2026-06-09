@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { User, onAuthStateChanged } from "firebase/auth";
 import { FIREBASE_AUTH } from "../../../FirebaseConfig";
-import TopNavBar from "../components/TopNavBar";
 import { getChatSessions, createChatSession, saveMessageToSession } from "../../services/firebaseChatService";
 
 export default function ChatPage() {
@@ -140,11 +139,9 @@ export default function ChatPage() {
 
   return (
     <div className="text-on-surface font-body-md antialiased min-h-screen flex flex-col lg:flex-row overflow-hidden">
-
-      <TopNavBar/>
       
       {/* Chat History SideNavBar */}
-      <nav className="hidden lg:flex flex-col fixed left-0 top-16 h-[calc(100vh-4rem)] z-40 bg-surface dark:bg-background border-r border-on-surface dark:border-outline w-64 no-grid">
+      <nav className="hidden lg:flex flex-col fixed left-[var(--sidebar-width,16rem)] top-0 h-screen z-40 bg-surface dark:bg-background border-r border-on-surface dark:border-outline w-64 no-grid transition-all duration-300">
         <div className="p-4 border-b border-on-surface">
           <button 
             onClick={handleNewChat}
@@ -206,7 +203,7 @@ export default function ChatPage() {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col lg:flex-row lg:ml-64 mt-16 h-[calc(100vh-4rem)]">
+      <main className="flex-1 flex flex-col lg:flex-row lg:ml-64 h-screen transition-all duration-300">
         
         
 

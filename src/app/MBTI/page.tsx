@@ -2,7 +2,6 @@
 
 import React from "react";
 import Link from "next/link";
-import TopNavBar from "../components/TopNavBar";
 import InteractiveGrid from "../components/InteractiveGrid";
 
 export default function MBTIPage() {
@@ -11,11 +10,8 @@ export default function MBTIPage() {
       {/* Interactive Vector Grid Background */}
       <InteractiveGrid />
 
-      {/* TopNavBar */}
-      <TopNavBar />
-
       {/* Main Content */}
-      <main className="flex-grow flex items-center justify-center p-margin-mobile md:p-margin-desktop mt-16 relative z-10 ">
+      <main className="flex-grow flex items-center justify-center p-margin-mobile md:p-margin-desktop mt-8 relative z-10 ">
         <div className="w-full max-w-4xl bg-surface/90 backdrop-blur-md border border-on-surface relative hard-shadow p-8 md:p-12 animate-fade-in-up">
           
           <div className="border-b border-on-surface pb-6 mb-8">

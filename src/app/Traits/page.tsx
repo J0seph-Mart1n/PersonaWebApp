@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { User, onAuthStateChanged } from "firebase/auth";
 import { FIREBASE_AUTH } from "../../../FirebaseConfig";
-import TopNavBar from "../components/TopNavBar";
 import UserGraph from "../components/UserGraph";
 import { getLatestAssessmentFromFirebase } from "../../services/firebaseAssessmentService";
 import { questions } from "../../data/questions";
@@ -76,11 +75,8 @@ export default function DashboardPage() {
   return (
     <div className="font-body-md text-body-md text-on-surface antialiased min-h-screen relative overflow-x-hidden">
       
-      {/* TopNavBar */}
-      <TopNavBar />
-        
         {/* Main Content Area */}
-        <main className="flex-1 mt-12 p-margin-mobile md:p-margin-desktop bg-transparent pb-32">
+        <main className="flex-1 mt-4 p-margin-mobile md:p-margin-desktop bg-transparent pb-32">
           <header className="mb-12">
             <h1 className="font-display-lg text-headline-lg md:text-display-lg text-on-surface mb-2">TRAITS</h1>
             <p className="font-mono-data text-mono-data text-on-surface-variant flex items-center gap-2">

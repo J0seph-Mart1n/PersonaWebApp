@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import TopNavBar from "../components/TopNavBar";
 import InteractiveGrid from "../components/InteractiveGrid";
 import ResultsSummary from "../components/ResultsSummary";
 
@@ -113,11 +112,8 @@ export default function AssessmentPage() {
       {/* Interactive Vector Grid Background */}
       <InteractiveGrid />
 
-      {/* TopNavBar */}
-      <TopNavBar />
-
       {/* Main Canvas */}
-      <main className="flex-grow flex items-center justify-center p-margin-mobile md:p-margin-desktop mt-16 relative z-10 ">
+      <main className="flex-grow flex items-center justify-center p-margin-mobile md:p-margin-desktop mt-8 relative z-10 ">
         {authChecking ? (
           /* --- SKELETON LOADING --- */
           <div className="w-full max-w-2xl bg-surface/90 backdrop-blur-md border border-on-surface relative hard-shadow p-8 md:p-12 text-center animate-pulse">

@@ -1,7 +1,6 @@
 "use client";
 
 import InteractiveGrid from "../components/InteractiveGrid";
-import TopNavBar from "../components/TopNavBar";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
@@ -42,9 +41,8 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen flex flex-col font-body-md text-on-surface antialiased overflow-x-hidden">
       <InteractiveGrid />
-      <TopNavBar />
       
-      <main className="flex-grow flex items-center justify-center p-margin-mobile md:p-margin-desktop mt-16 relative z-10">
+      <main className="flex-grow flex items-center justify-center p-margin-mobile md:p-margin-desktop mt-8 relative z-10">
         <div className="w-full max-w-md bg-surface-container-lowest border-2 border-on-surface relative shadow-[4px_4px_0px_0px_rgba(28,28,15,1)] p-8 md:p-12 animate-fade-in-up">
           
           <div className="border-b border-on-surface pb-6 mb-8 text-center">

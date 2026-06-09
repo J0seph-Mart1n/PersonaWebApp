@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import SideNavBar from "./components/SideNavBar";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -25,8 +26,10 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className={`${inter.variable} bg-background min-h-screen relative flex flex-col font-sans text-on-background selection:bg-primary-container selection:text-on-surface antialiased`}>
-        {children}
+      <body className={`${inter.variable} bg-background min-h-screen relative flex font-sans text-on-background selection:bg-primary-container selection:text-on-surface antialiased`}>
+        <SideNavBar>
+          {children}
+        </SideNavBar>
       </body>
     </html>
   );
