@@ -2,23 +2,32 @@
 
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
-import { User, onAuthStateChanged, signOut } from "firebase/auth";
-import { FIREBASE_AUTH } from "../../../FirebaseConfig";
+import { getUserProfile } from "../../services/backendUserService";
+import { usePathname, useRouter } from "next/navigation";
 
 export default function SideNavBar({ children }: { children?: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, (currentUser) => {
-      setUser(currentUser);
+    const fetchProfile = async () => {
+      if (pathname !== "/Onboarding") {
+        const profile = await getUserProfile("main_user");
+        if (profile && profile.hasCompletedOnboarding) {
+          setUser({ displayName: profile.username || "main_user", email: "Local Environment", uid: "main_user" });
+        } else {
+          router.push("/Onboarding");
+        }
+      }
       setAuthLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
+    };
+    fetchProfile();
+  }, [pathname, router]);
 
   // Update CSS variable for sidebar width so other components (like Chat) can adjust
   useEffect(() => {
@@ -37,12 +46,9 @@ export default function SideNavBar({ children }: { children?: React.ReactNode })
   }, []);
 
   const handleSignOut = async () => {
-    try {
-      await signOut(FIREBASE_AUTH);
-      setIsMenuOpen(false);
-    } catch (error) {
-      console.error("Error signing out:", error);
-    }
+    // Local app doesn't need sign out, but we can redirect to Onboarding
+    router.push("/Onboarding");
+    setIsMenuOpen(false);
   };
 
   return (

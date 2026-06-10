@@ -2,14 +2,13 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { User } from "firebase/auth";
 import { questions, Question } from "../../data/questions";
-import { saveAssessmentScoreToFirebase } from "../../services/firebaseAssessmentService";
+import { saveAssessmentScoreToBackend } from "../../services/backendAssessmentService";
 
 interface ResultsSummaryProps {
   answers: Record<number, number>;
   onRetake: () => void;
-  user: User | null;
+  user: any;
   isHistorical?: boolean;
 }
 
@@ -72,11 +71,15 @@ export default function ResultsSummary({ answers, onRetake, user, isHistorical =
         }),
       });
 
-      // 2. Save to Firebase Firestore
-      const firebasePromise = saveAssessmentScoreToFirebase(user.uid, mbtiVector, detailedAnswers);
+      // 2. Save to MongoDB
+      const backendSavePromise = saveAssessmentScoreToBackend(
+        user.uid,
+        mbtiVector,
+        detailedAnswers
+      ); 
 
       // Wait for both to complete
-      const [response] = await Promise.all([backendPromise, firebasePromise]);
+      const [response] = await Promise.all([backendPromise, backendSavePromise]);
 
       if (!response.ok) throw new Error("Failed to save to backend.");
 

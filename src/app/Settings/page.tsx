@@ -1,12 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { User, onAuthStateChanged } from "firebase/auth";
-import { FIREBASE_AUTH } from "../../../FirebaseConfig";
-import { getUserProfile, updateUserProfile } from "../../services/firebaseUserService";
+import { getUserProfile, updateUserProfile } from "../../services/backendUserService";
 
 export default function SettingsPage() {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<any>(null);
   const [githubUrl, setGithubUrl] = useState("");
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -16,20 +14,17 @@ export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, async (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        setIsLoading(true);
-        const profile = await getUserProfile(currentUser.uid);
-        if (profile) {
-          setGithubUrl(profile.githubUrl || "");
-        }
-        setIsLoading(false);
-      } else {
-        setIsLoading(false);
+    const checkAuth = async () => {
+      const mockUser = { uid: "main_user" };
+      setUser(mockUser);
+      setIsLoading(true);
+      const profile = await getUserProfile(mockUser.uid);
+      if (profile) {
+        setGithubUrl(profile.githubUrl || "");
       }
-    });
-    return () => unsubscribe();
+      setIsLoading(false);
+    };
+    checkAuth();
   }, []);
 
   const handleSave = async (e: React.FormEvent) => {

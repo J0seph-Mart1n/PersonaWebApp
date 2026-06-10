@@ -4,8 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import InteractiveGrid from "./components/InteractiveGrid";
 import "./globals.css";
-import { onAuthStateChanged } from "firebase/auth";
-import { FIREBASE_AUTH } from "../../FirebaseConfig";
+
 import Footer from "./components/Footer";
 
 export default function Home() {

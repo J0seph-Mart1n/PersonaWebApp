@@ -7,16 +7,14 @@ import InteractiveGrid from "../components/InteractiveGrid";
 import ResultsSummary from "../components/ResultsSummary";
 
 import { questions } from "../../data/questions";
-import { User, onAuthStateChanged } from "firebase/auth";
-import { FIREBASE_AUTH } from "../../../FirebaseConfig";
-import { getLatestAssessmentFromFirebase } from "../../services/firebaseAssessmentService";
+import { getLatestAssessmentFromBackend, saveAssessmentScoreToBackend } from "../../services/backendAssessmentService";
 
 const LIKERT_LABELS = ["", "Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"];
 
 export default function AssessmentPage() {
   const router = useRouter();
   const [authChecking, setAuthChecking] = useState(true);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<any>(null);
   const [isStarted, setIsStarted] = useState<boolean>(false);
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
   
@@ -28,34 +26,31 @@ export default function AssessmentPage() {
   const [isHistorical, setIsHistorical] = useState<boolean>(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, async (currentUser) => {
-      if (!currentUser) {
-        router.push("/Signup");
-      } else {
-        setUser(currentUser);
+    const checkAuth = async () => {
+      const mockUser = { uid: "main_user" };
+      setUser(mockUser);
+      
+      // Check for historical assessment
+      const latestAssessment = await getLatestAssessmentFromBackend(mockUser.uid);
+      if (latestAssessment) {
+        const reconstructedAnswers: Record<number, number> = {};
+        latestAssessment.detailedAnswers.forEach((ans: any) => {
+          const q = questions.find(q => q.text === ans.question);
+          if (q) {
+            const score = LIKERT_LABELS.indexOf(ans.answer);
+            if (score > 0) reconstructedAnswers[q.id] = score;
+          }
+        });
         
-        // Check for historical assessment
-        const latestAssessment = await getLatestAssessmentFromFirebase(currentUser.uid);
-        if (latestAssessment) {
-          const reconstructedAnswers: Record<number, number> = {};
-          latestAssessment.detailedAnswers.forEach((ans: any) => {
-            const q = questions.find(q => q.text === ans.question);
-            if (q) {
-              const score = LIKERT_LABELS.indexOf(ans.answer);
-              if (score > 0) reconstructedAnswers[q.id] = score;
-            }
-          });
-          
-          setAnswers(reconstructedAnswers);
-          setIsHistorical(true);
-          setIsStarted(true);
-          setIsCompleted(true);
-        }
-        
-        setAuthChecking(false);
+        setAnswers(reconstructedAnswers);
+        setIsHistorical(true);
+        setIsStarted(true);
+        setIsCompleted(true);
       }
-    });
-    return () => unsubscribe();
+      
+      setAuthChecking(false);
+    };
+    checkAuth();
   }, [router]);
 
   // Configuration for the Likert scale

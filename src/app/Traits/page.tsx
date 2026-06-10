@@ -2,10 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { User, onAuthStateChanged } from "firebase/auth";
-import { FIREBASE_AUTH } from "../../../FirebaseConfig";
 import UserGraph from "../components/UserGraph";
-import { getLatestAssessmentFromFirebase } from "../../services/firebaseAssessmentService";
+import { getLatestAssessmentFromBackend } from "../../services/backendAssessmentService";
 import { questions } from "../../data/questions";
 
 const LIKERT_LABELS = ["", "Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"];
@@ -31,45 +29,43 @@ const calculateOctagonPoints = (radius: number) => {
 };
 
 export default function DashboardPage() {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<any>(null);
   const [traitScores, setTraitScores] = useState<Record<string, number> | null>(null);
   const [mbtiVector, setMbtiVector] = useState<string | null>(null);
   const [isAssessmentLoading, setIsAssessmentLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, async (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        setIsAssessmentLoading(true);
-        const assessment = await getLatestAssessmentFromFirebase(currentUser.uid);
-        if (assessment) {
-          const answers: Record<number, number> = {};
-          assessment.detailedAnswers.forEach((ans: any) => {
-            const q = questions.find(q => q.text === ans.question);
-            if (q) {
-              const score = LIKERT_LABELS.indexOf(ans.answer);
-              if (score > 0) answers[q.id] = score;
-            }
-          });
+    const checkAuth = async () => {
+      const mockUser = { uid: "main_user" };
+      setUser(mockUser);
+      
+      setIsAssessmentLoading(true);
+      const assessment = await getLatestAssessmentFromBackend(mockUser.uid);
+      if (assessment) {
+        const answers: Record<number, number> = {};
+        assessment.detailedAnswers.forEach((ans: any) => {
+          const q = questions.find(q => q.text === ans.question);
+          if (q) {
+            const score = LIKERT_LABELS.indexOf(ans.answer);
+            if (score > 0) answers[q.id] = score;
+          }
+        });
 
-          const scores: Record<string, number> = {};
-          DICHOTOMIES.forEach(([traitA, traitB]) => {
-            const scoreA = questions.filter(q => q.trait === traitA).reduce((sum, q) => sum + (answers[q.id] || 3), 0);
-            const scoreB = questions.filter(q => q.trait === traitB).reduce((sum, q) => sum + (answers[q.id] || 3), 0);
-            const total = scoreA + scoreB;
-            scores[traitA] = scoreA / total;
-            scores[traitB] = scoreB / total;
-          });
+        const scores: Record<string, number> = {};
+        DICHOTOMIES.forEach(([traitA, traitB]) => {
+          const scoreA = questions.filter(q => q.trait === traitA).reduce((sum, q) => sum + (answers[q.id] || 3), 0);
+          const scoreB = questions.filter(q => q.trait === traitB).reduce((sum, q) => sum + (answers[q.id] || 3), 0);
+          const total = scoreA + scoreB;
+          scores[traitA] = scoreA / total;
+          scores[traitB] = scoreB / total;
+        });
 
-          setTraitScores(scores);
-          setMbtiVector(assessment.mbtiVector || null);
-        }
-        setIsAssessmentLoading(false);
-      } else {
-        setIsAssessmentLoading(false);
+        setTraitScores(scores);
+        setMbtiVector(assessment.mbtiVector || null);
       }
-    });
-    return () => unsubscribe();
+      setIsAssessmentLoading(false);
+    };
+    checkAuth();
   }, []);
 
   return (
