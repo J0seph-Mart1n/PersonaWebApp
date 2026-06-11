@@ -45,10 +45,10 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col font-body-md text-on-surface antialiased overflow-x-hidden">
+    <div className="w-full min-h-screen flex flex-col font-body-md text-on-surface antialiased overflow-x-hidden">
       <InteractiveGrid />
 
-      <main className="flex-grow flex items-center justify-center p-margin-mobile md:p-margin-desktop mt-8 relative z-10">
+      <main className="flex-grow flex items-center justify-center p-margin-mobile md:p-margin-desktop relative z-10">
         <div className="w-full max-w-md bg-surface-container-lowest border-2 border-on-surface relative shadow-[4px_4px_0px_0px_rgba(28,28,15,1)] p-8 md:p-12 animate-fade-in-up">
           <div className="border-b border-on-surface pb-6 mb-8 text-center">
             <h1 className="font-display-lg text-display-lg-mobile md:text-[40px] leading-none tracking-tighter uppercase text-on-surface">

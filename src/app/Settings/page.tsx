@@ -5,7 +5,8 @@ import { getUserProfile, updateUserProfile } from "../../services/backendUserSer
 
 export default function SettingsPage() {
   const [user, setUser] = useState<any>(null);
-  const [githubUrl, setGithubUrl] = useState("");
+  const [username, setUsername] = useState("");
+  const [bio, setBio] = useState("");
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
@@ -20,7 +21,8 @@ export default function SettingsPage() {
       setIsLoading(true);
       const profile = await getUserProfile(mockUser.uid);
       if (profile) {
-        setGithubUrl(profile.githubUrl || "");
+        setUsername(profile.username || "");
+        setBio(profile.bio || "");
       }
       setIsLoading(false);
     };
@@ -35,37 +37,14 @@ export default function SettingsPage() {
     setSaveStatus("idle");
     
     const success = await updateUserProfile(user.uid, {
-      githubUrl,
+      username,
+      bio,
     });
-
-    let ingestSuccess = true;
-    if (success && githubUrl) {
-      try {
-        const response = await fetch("http://localhost:5000/api/ingest/social", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            userId: user.uid,
-            platform: "github",
-            profileUrl: githubUrl,
-          }),
-        });
-        
-        if (!response.ok) {
-          ingestSuccess = false;
-        }
-      } catch (error) {
-        console.error("Failed to sync github profile:", error);
-        ingestSuccess = false;
-      }
-    }
     
     setIsSaving(false);
-    setSaveStatus(success && ingestSuccess ? "success" : "error");
+    setSaveStatus(success ? "success" : "error");
     
-    if (success && ingestSuccess) {
+    if (success) {
       setTimeout(() => setSaveStatus("idle"), 3000);
     }
   };
@@ -117,7 +96,7 @@ export default function SettingsPage() {
             <div className="absolute top-0 right-0 w-8 h-8 border-l border-b border-on-surface bg-surface-container"></div>
             
             <div className="flex justify-between items-start mb-8">
-              <h2 className="font-headline-lg text-headline-lg-mobile text-on-surface">SOCIAL PRESENCE</h2>
+              <h2 className="font-headline-lg text-headline-lg-mobile text-on-surface">USER PROFILE</h2>
               <span className="font-mono-data text-mono-data text-on-surface bg-primary-container px-2 py-1 border border-on-surface">EDIT</span>
             </div>
 
@@ -135,16 +114,30 @@ export default function SettingsPage() {
               <form onSubmit={handleSave} className="space-y-6">
                 
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="github" className="font-label-bold text-label-bold text-on-surface uppercase tracking-wider">
-                    GitHub URL
+                  <label htmlFor="username" className="font-label-bold text-label-bold text-on-surface uppercase tracking-wider">
+                    Username
                   </label>
                   <input
-                    type="url"
-                    id="github"
-                    value={githubUrl}
-                    onChange={(e) => setGithubUrl(e.target.value)}
-                    placeholder="https://github.com/username"
+                    type="text"
+                    id="username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Enter display name"
                     className="bg-surface-container border border-on-surface p-3 font-body-md text-on-surface focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all"
+                  />
+                </div>
+                
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="bio" className="font-label-bold text-label-bold text-on-surface uppercase tracking-wider">
+                    Bio
+                  </label>
+                  <textarea
+                    id="bio"
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    rows={4}
+                    placeholder="Tell the system about yourself..."
+                    className="bg-surface-container border border-on-surface p-3 font-body-md text-on-surface focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all resize-none"
                   />
                 </div>
 

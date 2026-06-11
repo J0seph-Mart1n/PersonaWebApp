@@ -45,11 +45,9 @@ export default function SideNavBar({ children }: { children?: React.ReactNode })
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleSignOut = async () => {
-    // Local app doesn't need sign out, but we can redirect to Onboarding
-    router.push("/Onboarding");
-    setIsMenuOpen(false);
-  };
+  if (pathname === "/Onboarding") {
+    return <>{children}</>;
+  }
 
   return (
     <>
@@ -116,22 +114,15 @@ export default function SideNavBar({ children }: { children?: React.ReactNode })
                     {user.email}
                   </p>
                 </div>
-                <button 
-                  onClick={handleSignOut}
-                  className="px-4 py-3 text-left font-label-bold text-label-bold text-error hover:bg-surface-variant transition-colors flex items-center gap-2"
-                >
-                  <span className="material-symbols-outlined text-[16px]">logout</span>
-                  Sign Out
-                </button>
               </div>
             )}
           </div>
         ) : (
           <Link
-            href="/Signup"
+            href="/Onboarding"
             className={`mt-2 font-label-bold text-label-bold text-on-surface border border-on-surface py-3 hover:bg-surface-variant transition-colors flex items-center justify-center gap-2 ${isCollapsed ? 'px-0' : 'px-4'}`}
           >
-            <span className="material-symbols-outlined text-[18px]">login</span>
+            <span className="material-symbols-outlined text-[18px]">Setup</span>
             {!isCollapsed && "Login"}
           </Link>
         )}
