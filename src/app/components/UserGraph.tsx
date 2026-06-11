@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import dynamic from "next/dynamic";
-import { User } from "firebase/auth";
 import * as THREE from "three";
 import SpriteText from "three-spritetext";
 
@@ -29,7 +28,7 @@ interface GraphLink {
   [key: string]: unknown;
 }
 
-export default function UserGraph({ user }: { user: User | null }) {
+export default function UserGraph({ user }: { user: any }) {
   const [graphData, setGraphData] = useState({ nodes: [], links: [] });
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });

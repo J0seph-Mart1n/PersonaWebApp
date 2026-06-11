@@ -2,13 +2,12 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { User, onAuthStateChanged } from "firebase/auth";
-import { FIREBASE_AUTH } from "../../../FirebaseConfig";
-import { getChatSessions, createChatSession, saveMessageToSession } from "../../services/firebaseChatService";
+import { getChatSessions, createChatSession, saveMessageToSession } from "../../services/backendChatService";
+import { getUserProfile } from "../../services/backendUserService";
 
 export default function ChatPage() {
   const [inputText, setInputText] = useState("");
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [sessions, setSessions] = useState<any[]>([]);
   const [isSessionsLoading, setIsSessionsLoading] = useState(true);
@@ -22,18 +21,19 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, async (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        setIsSessionsLoading(true);
-        const userSessions = await getChatSessions(currentUser.uid);
-        setSessions(userSessions);
-        setIsSessionsLoading(false);
-      } else {
-        setIsSessionsLoading(false);
+    const checkAuth = async () => {
+      const mockUser = { uid: "main_user", displayName: "User" };
+      const profile = await getUserProfile("main_user");
+      if (profile && profile.username) {
+        mockUser.displayName = profile.username;
       }
-    });
-    return () => unsubscribe();
+      setUser(mockUser);
+      setIsSessionsLoading(true);
+      const userSessions = await getChatSessions(mockUser.uid);
+      setSessions(userSessions);
+      setIsSessionsLoading(false);
+    };
+    checkAuth();
   }, []);
 
   const scrollToBottom = () => {

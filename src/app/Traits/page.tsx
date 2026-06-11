@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import UserGraph from "../components/UserGraph";
 import { getLatestAssessmentFromBackend } from "../../services/backendAssessmentService";
+import { getUserProfile } from "../../services/backendUserService";
 import { questions } from "../../data/questions";
 
 const LIKERT_LABELS = ["", "Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"];
@@ -36,7 +37,11 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const mockUser = { uid: "main_user" };
+      const mockUser = { uid: "main_user", displayName: "User" };
+      const profile = await getUserProfile("main_user");
+      if (profile && profile.username) {
+        mockUser.displayName = profile.username;
+      }
       setUser(mockUser);
       
       setIsAssessmentLoading(true);
